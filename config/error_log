@@ -1,0 +1,8 @@
+[23-Feb-2025 22:43:58 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/fo6uw1a2iai3/public_html/quantumithrm.com/config/app.php:19
+Stack trace:
+#0 {main}
+  thrown in /home/fo6uw1a2iai3/public_html/quantumithrm.com/config/app.php on line 19
+[05-Mar-2025 08:33:08 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/fo6uw1a2iai3/public_html/quantumithrm.com/config/app.php:19
+Stack trace:
+#0 {main}
+  thrown in /home/fo6uw1a2iai3/public_html/quantumithrm.com/config/app.php on line 19

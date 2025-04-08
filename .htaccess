@@ -1,0 +1,60 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+    
+    # Deny access to filenames starting with dot(.)
+    
+
+    RewriteEngine On
+
+    # Deny access to hidden files and directories
+    # (files/directories starting with a dot)
+    <IfModule mod_rewrite.c>
+        RewriteCond %{SCRIPT_FILENAME} -d [OR]
+        RewriteCond %{SCRIPT_FILENAME} -f
+        RewriteCond %{REQUEST_URI} !^/.well-known/ [NC]
+        RewriteRule "(^|/)\." - [F]
+    </IfModule>
+    
+    # Deny access to files with extensions .ini, .psd, .log, .sh
+    <FilesMatch "\.(json|lock|phar)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    
+    # Protect the .htaccess file itself
+    <Files .htaccess>
+        Order Allow,Deny
+        Deny from all
+    </Files>
+    
+    # Protect against common attack methods
+    # Security Headers
+    <IfModule mod_headers.c>
+        Header set X-XSS-Protection "1; mode=block"
+        Header set X-Content-Type-Options "nosniff"
+        Header always append X-Frame-Options SAMEORIGIN
+        Header set Strict-Transport-Security "max-age=31536000" env=HTTPS
+    </IfModule>
+
+    # Prevent access to sensitive system files
+    <FilesMatch "^(.git|composer\.json|composer\.lock|config\.php|php\.ini|\.env)">
+        Order Allow,Deny
+        Deny from all
+    </FilesMatch>
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
