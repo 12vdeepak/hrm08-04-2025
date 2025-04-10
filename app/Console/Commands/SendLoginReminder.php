@@ -31,11 +31,12 @@ class SendLoginReminder extends Command
             return;
         }
 
-        // Check if current time is around 11:00 AM (when reminders should be sent)
+        // Optional: Check if current time is around 11:00 AM
         $reminderTime = Carbon::today()->setTime(11, 0, 0);
         Log::info('Reminder time set to: ' . $reminderTime->toTimeString());
 
         // Optional: Only run this command if it's close to 11:00 AM (within 5 minutes)
+        // Comment this part out during testing if you want to run the command anytime
         if ($now->lt($reminderTime->copy()->subMinutes(5)) || $now->gt($reminderTime->copy()->addMinutes(5))) {
             Log::info('Current time is not within the reminder window (11:00 AM ±5 minutes). Skipping reminder process.');
             $this->info('Current time is not within reminder window. No reminders sent.');
@@ -49,14 +50,6 @@ class SendLoginReminder extends Command
             ->get();
         Log::info('Found ' . $allUsers->count() . ' active users');
 
-        Log::info('Retrieving users who checked in before or at 10:30 AM (on time)');
-        // Get users who have checked in on time (before or at 10:30 AM)
-        $onTimeUsers = CheckIn::whereDate('start_time', $today)
-            ->whereTime('start_time', '<=', '10:30:00')
-            ->pluck('user_id')
-            ->toArray();
-        Log::info('Found ' . count($onTimeUsers) . ' users who checked in on time');
-
         Log::info('Retrieving users who checked in late (after 10:30 AM)');
         // Get users who have checked in late (after 10:30 AM)
         $lateUsers = CheckIn::whereDate('start_time', $today)
@@ -65,9 +58,12 @@ class SendLoginReminder extends Command
             ->toArray();
         Log::info('Found ' . count($lateUsers) . ' users who checked in late');
 
-        // All users who have checked in (on time or late)
-        $checkedInUsers = array_merge($onTimeUsers, $lateUsers);
-        Log::info('Total users checked in: ' . count($checkedInUsers));
+        Log::info('Retrieving all users who have checked in today (any time)');
+        // Get all users who have checked in today (regardless of time)
+        $checkedInUsers = CheckIn::whereDate('start_time', $today)
+            ->pluck('user_id')
+            ->toArray();
+        Log::info('Found ' . count($checkedInUsers) . ' total users who have checked in today');
 
         Log::info('Retrieving users on approved leave');
         // Get users who are on leave with status "Accepted By HR"
