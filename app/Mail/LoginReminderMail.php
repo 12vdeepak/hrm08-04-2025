@@ -13,7 +13,7 @@ class LoginReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-     public $fullName;
+    public $fullName;
 
     public function __construct($fullName)
     {
@@ -22,7 +22,7 @@ class LoginReminderMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Reminder: Please Log in to HRMS')
+        return $this->subject('Reminder: Please Log in to HRMS & Teams')
             ->cc([
                 'hr@quantumitinnovation.com',
                 'mansi@quantumitinnovation.com',
