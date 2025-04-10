@@ -26,38 +26,42 @@ class SendLoginReminder extends Command
 
         // Get all active users
         $allUsers = User::select('id', 'name', 'lastname', 'email')
-                        ->where('employee_status', 1)
-                        ->get();
+            ->where('employee_status', 1)
+            ->get();
 
-        // Users who checked-in before or at 10:30 AM
-        $earlyLoggedInUserIds = CheckIn::whereDate('start_time', $today)
-                                       ->whereTime('start_time', '<=', '10:30:00')
-                                       ->pluck('user_id')
-                                       ->toArray();
+        // Get users who logged in today (any time)
+        $checkedInUserIds = CheckIn::whereDate('start_time', $today)
+            ->pluck('user_id')
+            ->toArray();
 
-        // Users who checked-in after 10:30 AM
-        $lateLoggedInUserIds = CheckIn::whereDate('start_time', $today)
-                                      ->whereTime('start_time', '>', '10:30:00')
-                                      ->pluck('user_id')
-                                      ->toArray();
+        // Get users who logged in after 10:30 AM
+        $lateCheckedInUserIds = CheckIn::whereDate('start_time', $today)
+            ->whereTime('start_time', '>', '10:30:00')
+            ->pluck('user_id')
+            ->toArray();
 
-        // Users on leave
+        // Get users on leave
         $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
-                               ->whereDate('start_date', '<=', $today)
-                               ->whereDate('end_date', '>=', $today)
-                               ->pluck('user_id')
-                               ->toArray();
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->pluck('user_id')
+            ->toArray();
 
-        // Users to notify = (All Users - Early Check-ins) - On Leave
-        $usersToNotify = $allUsers->reject(function ($user) use ($earlyLoggedInUserIds, $onLeaveUserIds) {
-            return in_array($user->id, $earlyLoggedInUserIds) || in_array($user->id, $onLeaveUserIds);
+        // Users to notify:
+        // 1. Those who checked in late
+        // 2. Those who didn't check in at all
+        // But exclude users on leave
+        $usersToNotify = $allUsers->filter(function ($user) use ($checkedInUserIds, $lateCheckedInUserIds, $onLeaveUserIds) {
+            return (
+                // Didn't check in OR checked in late
+                (!in_array($user->id, $checkedInUserIds) || in_array($user->id, $lateCheckedInUserIds))
+                && !in_array($user->id, $onLeaveUserIds)
+            );
         });
 
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
-
             Mail::to($user->email)->queue(new LoginReminderMail($fullName));
-
             $this->info("Queued reminder email to: $fullName ({$user->email})");
         }
     }
