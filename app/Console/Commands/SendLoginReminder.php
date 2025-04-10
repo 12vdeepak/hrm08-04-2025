@@ -12,8 +12,8 @@ use Carbon\Carbon;
 
 class SendLoginReminder extends Command
 {
-  protected $signature = 'send:login-reminder';
-    protected $description = 'Send reminder emails to users who have not logged in by 10:30 AM on weekdays and are not on approved leave';
+    protected $signature = 'send:login-reminder';
+    protected $description = 'Send reminder emails to users who logged in after 10:30 AM or not logged in at all and are not on approved leave';
 
     public function handle()
     {
@@ -29,28 +29,33 @@ class SendLoginReminder extends Command
                         ->where('employee_status', 1)
                         ->get();
 
-        // Get users who have already checked in before 10:30 AM
-        $loggedInUsers = CheckIn::whereDate('start_time', $today)
-                                ->whereTime('start_time', '<=', '10:30:00')
-                                ->pluck('user_id')
-                                ->toArray();
+        // Users who checked-in before or at 10:30 AM
+        $earlyLoggedInUserIds = CheckIn::whereDate('start_time', $today)
+                                       ->whereTime('start_time', '<=', '10:30:00')
+                                       ->pluck('user_id')
+                                       ->toArray();
 
-        // Get users who are on leave with status "Accepted By HR"
+        // Users who checked-in after 10:30 AM
+        $lateLoggedInUserIds = CheckIn::whereDate('start_time', $today)
+                                      ->whereTime('start_time', '>', '10:30:00')
+                                      ->pluck('user_id')
+                                      ->toArray();
+
+        // Users on leave
         $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
                                ->whereDate('start_date', '<=', $today)
                                ->whereDate('end_date', '>=', $today)
                                ->pluck('user_id')
                                ->toArray();
 
-        // Filter users who haven't logged in and are not on leave
-        $usersToNotify = $allUsers->reject(function ($user) use ($loggedInUsers, $onLeaveUserIds) {
-            return in_array($user->id, $loggedInUsers) || in_array($user->id, $onLeaveUserIds);
+        // Users to notify = (All Users - Early Check-ins) - On Leave
+        $usersToNotify = $allUsers->reject(function ($user) use ($earlyLoggedInUserIds, $onLeaveUserIds) {
+            return in_array($user->id, $earlyLoggedInUserIds) || in_array($user->id, $onLeaveUserIds);
         });
 
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
 
-            // Queue the email
             Mail::to($user->email)->queue(new LoginReminderMail($fullName));
 
             $this->info("Queued reminder email to: $fullName ({$user->email})");
