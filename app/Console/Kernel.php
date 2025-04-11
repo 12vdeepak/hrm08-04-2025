@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('activity:update')->everyMinute();
-        $schedule->command('send:login-reminder')->weekdays()->at('11:00');
+        $schedule->command('send:login-reminder')->weekdays()->at('10:31');
         $schedule->command('send:daily-status-report')->weekdays()->at('11:00');
         $schedule->command('send:late-mark-reminder')->weekdays()->at('20:00');
     }

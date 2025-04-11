@@ -17,7 +17,7 @@ class SendLateMarkReminder extends Command
     public function handle()
     {
         $today = Carbon::today();
-        $elevenAM = $today->copy()->setTime(11, 0, 0);
+        $cutOff = $today->copy()->setTime(11, 0, 0);
 
         if ($today->isWeekend()) {
             $this->info('Weekend. No reminders sent.');
@@ -45,9 +45,8 @@ class SendLateMarkReminder extends Command
             ->where('u.employee_status', 1)
             ->whereNull('u.deleted_at')
             ->whereNotIn('u.id', $onLeaveUserIds)
-            ->where(function ($query) use ($elevenAM) {
-                $query->whereNull('ci.first_checkin_time') // not logged in
-                    ->orWhere('ci.first_checkin_time', '>', $elevenAM); // logged in late
+            ->where(function ($query) use ($cutOff) {
+                $query->where('ci.first_checkin_time', '>', $cutOff); // logged in late
             })
             ->select('u.id', 'u.name', 'u.lastname', 'u.email', 'ci.first_checkin_time')
             ->get();
@@ -55,13 +54,11 @@ class SendLateMarkReminder extends Command
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
 
-            if (is_null($user->first_checkin_time)) {
+            
                 info("{$fullName} ({$user->email}) did NOT log in today.");
-            } else {
-                info("{$fullName} ({$user->email}) logged in LATE at {$user->first_checkin_time}.");
-            }
+         
 
-            Mail::to($user->email)->queue(new LateMarkReminderMail($fullName));
+            // Mail::to($user->email)->queue(new LateMarkReminderMail($fullName));
         }
     }
 }
