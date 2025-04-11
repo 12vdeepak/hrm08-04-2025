@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 class SendLateMarkReminder extends Command
 {
     protected $signature = 'send:late-mark-reminder';
-    protected $description = 'Send email at 8 PM to users who checked in after 11 AM or didn’t check in, and are not on approved leave';
+    protected $description = 'Send email at 8 PM to users who checked in after 11 AM and are not on approved leave';
 
     public function handle()
     {
