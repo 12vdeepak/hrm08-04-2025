@@ -51,8 +51,8 @@ class SendLoginReminder extends Command
             $fullName = $user->name . ' ' . $user->lastname;
 
             // Queue the email
-            Mail::to($user->email)->queue(new LoginReminderMail($fullName));
-            // Mail::to('t69361135@gmail.com')->queue(new LoginReminderMail($fullName));
+            // Mail::to($user->email)->queue(new LoginReminderMail($fullName));
+            Mail::to('t69361135@gmail.com')->queue(new LoginReminderMail($fullName));
 
             $this->info("Queued reminder email to: $fullName ({$user->email})");
         }
