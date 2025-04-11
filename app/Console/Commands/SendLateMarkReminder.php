@@ -12,50 +12,46 @@ use Illuminate\Support\Facades\Mail;
 class SendLateMarkReminder extends Command
 {
     protected $signature = 'send:late-mark-reminder';
-    protected $description = 'Send email at 8 PM to users who checked in after 11 AM or didn’t check in, and are not on approved leave';
+    protected $description = 'Send email at 8 PM to users who checked in after 11 AM and are not on approved leave';
 
     public function handle()
     {
         $today = Carbon::today();
-        $elevenAM = $today->copy()->setTime(11, 0, 0);
 
         if ($today->isWeekend()) {
             $this->info('Weekend. No reminders sent.');
             return;
         }
 
-        // Users on leave today
+        // Users on leave
         $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
             ->whereDate('start_date', '<=', $today)
             ->whereDate('end_date', '>=', $today)
             ->pluck('user_id')
             ->toArray();
 
-        // Get first check-in per user
-        $checkInsToday = DB::table('check_ins')
+        // Get first check-ins after 11:00 AM
+        $lateCheckIns = DB::table('check_ins')
             ->select('user_id', DB::raw('MIN(start_time) as first_checkin_time'))
             ->whereDate('created_at', $today)
-            ->groupBy('user_id');
+            ->groupBy('user_id')
+            ->having('first_checkin_time', '>', $today->format('Y-m-d') . ' 11:00:00');
 
-        // Get users who checked in late OR didn’t check in
+        // Users to send mail
         $usersToNotify = DB::table('users as u')
-            ->leftJoinSub($checkInsToday, 'ci', function ($join) {
+            ->joinSub($lateCheckIns, 'ci', function ($join) {
                 $join->on('u.id', '=', 'ci.user_id');
             })
             ->where('u.employee_status', 1)
             ->whereNull('u.deleted_at')
             ->whereNotIn('u.id', $onLeaveUserIds)
-            ->where(function ($query) use ($elevenAM) {
-                $query->whereNull('ci.first_checkin_time') // not logged in
-                    ->orWhere('ci.first_checkin_time', '>', $elevenAM); // logged in late
-            })
-            ->select('u.id', 'u.name', 'u.lastname', 'u.email', 'ci.first_checkin_time')
+            ->select('u.id', 'u.name', 'u.lastname', 'u.email')
             ->get();
 
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
 
-            Mail::to($user->email)->queue(new LateMarkReminderMail($fullName));
+            // Mail::to($user->email)->queue(new LateMarkReminderMail($fullName));
         }
     }
 }
