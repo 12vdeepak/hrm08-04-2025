@@ -24,14 +24,14 @@ class SendLateMarkReminder extends Command
             return;
         }
 
-        // Users on leave today
+        // Users on leave
         $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
             ->whereDate('start_date', '<=', $today)
             ->whereDate('end_date', '>=', $today)
             ->pluck('user_id')
             ->toArray();
 
-        // Get first check-in per user
+        // Get first check-ins after 11:00 AM
         $checkInsToday = DB::table('check_ins')
             ->select('user_id', DB::raw('MIN(start_time) as first_checkin_time'))
             ->whereDate('created_at', $today)
@@ -57,5 +57,6 @@ class SendLateMarkReminder extends Command
 
             Mail::to($user->email)->queue(new LateMarkReminderMail($fullName));
         }
+
     }
 }
