@@ -26,7 +26,7 @@ class LoginReminderMail extends Mailable
             ->cc([
                 // 'hr@quantumitinnovation.com',
                 // 'mansi@quantumitinnovation.com',
-                'sanchitha@quantumitinnovation.com',
+                // 'sanchitha@quantumitinnovation.com',
                 'deepak.quantumitinnovation@gmail.com',
             ])
             ->view('emails.login_reminder')
