@@ -24,10 +24,9 @@ class LoginReminderMail extends Mailable
     {
         return $this->subject('Reminder: Please Log in to HRMS & Teams')
             ->cc([
-                // 'hr@quantumitinnovation.com',
-                // 'mansi@quantumitinnovation.com',
-                // 'sanchitha@quantumitinnovation.com',
-                'deepak.quantumitinnovation@gmail.com',
+                'hr@quantumitinnovation.com',
+                'mansi@quantumitinnovation.com',
+                'sanchitha@quantumitinnovation.com',
             ])
             ->view('emails.login_reminder')
             ->with([
