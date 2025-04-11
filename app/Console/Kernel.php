@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('activity:update')->everyMinute();
         $schedule->command('send:login-reminder')->weekdays()->at('11:00');
         $schedule->command('send:daily-status-report')->weekdays()->at('11:00');
+        $schedule->command('send:late-mark-reminder')->weekdays()->at('20:00');
     }
 
 
