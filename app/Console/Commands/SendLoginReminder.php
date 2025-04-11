@@ -2,13 +2,12 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\User;
-use App\Models\CheckIn;
+use DB;
+use Carbon\Carbon;
 use App\Models\Leave;
+use Illuminate\Console\Command;
 use App\Mail\LoginReminderMail;
 use Illuminate\Support\Facades\Mail;
-use Carbon\Carbon;
 
 class SendLoginReminder extends Command
 {
@@ -24,17 +23,6 @@ class SendLoginReminder extends Command
             return;
         }
 
-        // Get all active users
-        $allUsers = User::select('id', 'name', 'lastname', 'email')
-            ->where('employee_status', 1)
-            ->get();
-
-        // Get users who have already checked in before 10:30 AM
-        $loggedInUsers = CheckIn::whereDate('start_time', $today)
-            ->whereTime('start_time', '<=', '10:30:00')
-            ->pluck('user_id')
-            ->toArray();
-
         // Get users who are on leave with status "Accepted By HR"
         $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
             ->whereDate('start_date', '<=', $today)
@@ -42,19 +30,32 @@ class SendLoginReminder extends Command
             ->pluck('user_id')
             ->toArray();
 
-        // Filter users who haven't logged in and are not on leave
-        $usersToNotify = $allUsers->reject(function ($user) use ($loggedInUsers, $onLeaveUserIds) {
-            return in_array($user->id, $loggedInUsers) || in_array($user->id, $onLeaveUserIds);
-        });
+        // Subquery: get first check-in per user for today
+        $checkInsToday = DB::table('check_ins')
+            ->select('user_id', DB::raw('MIN(start_time) as first_checkin_time'))
+            ->whereDate('created_at', $today)
+            ->groupBy('user_id');
+
+        // Main query: active users only
+        $usersToNotify = DB::table('users as u')
+            ->leftJoinSub($checkInsToday, 'ci', function ($join) {
+                $join->on('u.id', '=', 'ci.user_id');
+            })
+            ->where('u.employee_status', 1)
+            ->whereNull('u.deleted_at')
+            ->whereNotIn('u.id', $onLeaveUserIds)
+            ->where(function ($query) use ($today) {
+                $query->whereNull('ci.first_checkin_time') // Not checked in
+                    ->orWhere('ci.first_checkin_time', '>', $today->format('Y-m-d') . ' 10:30:00'); // Checked in late
+            })
+            ->select('u.id', 'u.name', 'u.lastname', 'u.email')
+            ->get();
 
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
-
             // Queue the email
             // Mail::to($user->email)->queue(new LoginReminderMail($fullName));
-            Mail::to('t69361135@gmail.com')->queue(new LoginReminderMail($fullName));
-
-            $this->info("Queued reminder email to: $fullName ({$user->email})");
+            Mail::to('rashad.quantumitinnovation@gmail.com')->queue(new LoginReminderMail($fullName));
         }
     }
 }
