@@ -31,7 +31,7 @@ class SendLoginReminder extends Command
 
         // Get users who have already checked in before 10:30 AM
         $loggedInUsers = CheckIn::whereDate('start_time', $today)
-            ->whereTime('start_time', '<=', '10:30:00')
+            ->whereTime('start_time', '>=', '10:30:00')
             ->pluck('user_id')
             ->toArray();
 
