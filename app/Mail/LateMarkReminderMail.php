@@ -26,6 +26,11 @@ class LateMarkReminderMail extends Mailable
     public function build()
     {
         return $this->subject('Marked Late Today')
+            ->cc([
+                'hr@quantumitinnovation.com',
+                'mansi@quantumitinnovation.com',
+                'sanchitha@quantumitinnovation.com',
+            ])
             ->view('emails.late_mark_reminder')
             ->with([
                 'fullName' => $this->fullName,
