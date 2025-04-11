@@ -54,6 +54,12 @@ class SendLateMarkReminder extends Command
 
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
+            
+            if (is_null($user->first_checkin_time)) {
+                info("{$fullName} ({$user->email}) did NOT log in today.");
+            } else {
+                info("{$fullName} ({$user->email}) logged in LATE at {$user->first_checkin_time}.");
+            }
 
             Mail::to($user->email)->queue(new LateMarkReminderMail($fullName));
         }
