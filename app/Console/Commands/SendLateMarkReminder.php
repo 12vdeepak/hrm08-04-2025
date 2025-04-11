@@ -54,7 +54,7 @@ class SendLateMarkReminder extends Command
 
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
-            
+
             if (is_null($user->first_checkin_time)) {
                 info("{$fullName} ({$user->email}) did NOT log in today.");
             } else {
