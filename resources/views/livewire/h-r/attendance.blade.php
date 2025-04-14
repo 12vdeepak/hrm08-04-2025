@@ -20,7 +20,8 @@
                                     </div>
                                 </div>
                                 <div class="col-3">
-                                    <select class="form-control custom-select" name="checkin_status" id="checkin_status" wire:model="status">
+                                    <select class="form-control custom-select" name="checkin_status" id="checkin_status"
+                                        wire:model="status">
                                         <option value="0" label="Select">Select</option>
                                         <option value="1">Checked-in</option>
                                         <option value="2">Yet to Check-in</option>
@@ -51,15 +52,14 @@
                                                 <th>Time</th>
                                                 <th>Status</th>
                                                 <th>Comment</th>
-                                              
+
                                                 <th>Comment Action</th>
-                                                   <th>Screen Time</th>
+                                                <th>Screen Time</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @if ($employees->count() > 0)
                                                 @foreach ($employees as $employee)
-                                                
                                                     <tr>
                                                         <td>{{ $employee->name }}</td>
                                                         <td>{{ $employee->check_in_time }}</td>
@@ -67,7 +67,23 @@
                                                         <td>{{ $employee->check_out_time }}</td>
                                                         <td>{{ $employee->check_out_location }}</td>
                                                         <td>{{ $employee->time }}</td>
-                                                        <td><span class="badge @if($employee->attendance == 'Present') badge-success-light @elseif( $employee->attendance == 'Absent') badge-danger-light @else badge-pink-light @endif">{{ $employee->attendance }}</span></td>
+                                                        {{--  <td><span class="badge @if ($employee->attendance == 'Present') badge-success-light @elseif( $employee->attendance == 'Absent') badge-danger-light @else badge-pink-light @endif">{{ $employee->attendance }}</span></td>  --}}
+                                                        <td>
+                                                            <span
+                                                                class="badge
+                                                                @if ($employee->attendance == 'Present') badge-success-light
+                                                                @elseif($employee->attendance == 'Absent') badge-danger-light
+                                                                @else badge-pink-light @endif">
+                                                                {{ $employee->attendance }}
+                                                                @if (
+                                                                    $employee->attendance == 'Present' &&
+                                                                        $employee->check_in_time &&
+                                                                        \Carbon\Carbon::parse($employee->check_in_time)->format('H:i:s') > '11:00:00')
+                                                                    (Late)
+                                                                @endif
+                                                            </span>
+                                                        </td>
+
                                                         <td>{{ $employee->comment }}</td>
                                                         @if ($employee->comment == '-')
                                                             <td>
@@ -81,26 +97,25 @@
                                                             </td>
                                                         @endif
                                                         <?php
-                                                        $id=$employee->id; $activities  = DB::table('activity_trackers')->where('user_id', $id)->whereDate('activity_time', '=', $date)->get();
-                                                         $totalSeconds =0;
+                                                        $id = $employee->id;
+                                                        $activities = DB::table('activity_trackers')->where('user_id', $id)->whereDate('activity_time', '=', $date)->get();
+                                                        $totalSeconds = 0;
                                                         //dd($activities)
-                                                       
-        foreach($activities as $activity){
-                 $startTime = strtotime($activity->start_time);
-            $endTime = strtotime($activity->end_time);
-            $secondsDiff = $endTime - $startTime;
-            $totalSeconds += $secondsDiff;
-            
-           
-        }
-        
-        $hours = floor($totalSeconds / 3600);
-        $minutes = floor(($totalSeconds - ($hours * 3600)) / 60);
-        $seconds = $totalSeconds - ($hours * 3600) - ($minutes * 60);
-        $formattedTime = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
-       
+                                                        
+                                                        foreach ($activities as $activity) {
+                                                            $startTime = strtotime($activity->start_time);
+                                                            $endTime = strtotime($activity->end_time);
+                                                            $secondsDiff = $endTime - $startTime;
+                                                            $totalSeconds += $secondsDiff;
+                                                        }
+                                                        
+                                                        $hours = floor($totalSeconds / 3600);
+                                                        $minutes = floor(($totalSeconds - $hours * 3600) / 60);
+                                                        $seconds = $totalSeconds - $hours * 3600 - $minutes * 60;
+                                                        $formattedTime = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+                                                        
                                                         ?>
-                                                     <td>{{$formattedTime}}</td>
+                                                        <td>{{ $formattedTime }}</td>
                                                     </tr>
                                                 @endforeach
                                             @else
