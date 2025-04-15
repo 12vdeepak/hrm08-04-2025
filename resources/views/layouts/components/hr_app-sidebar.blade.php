@@ -6,7 +6,7 @@
                 <div class="app-sidebar__user">
                     <div class="dropdown user-pro-body text-center">
                         <div class="user-info">
-                            <h5 class=" mb-2">{{ auth()->user()->name }}  {{auth()->user()->lastname}}</h5>
+                            <h5 class=" mb-2">{{ auth()->user()->name }} {{ auth()->user()->lastname }}</h5>
                             <a href="{{ route('hr_dashboard') }}"><span
                                     class="text-muted app-sidebar__user-name text-sm">Human Resource</span></a>
                         </div>
@@ -58,10 +58,9 @@
                             <span class="side-menu__label">Time Tracker</span>
                         </a>
                     </li>
-                    
-                     <li class="slide">
-                        <a class="side-menu__item"
-                            href="{{ route('hr_view_leave_request') }}">
+
+                    <li class="slide">
+                        <a class="side-menu__item" href="{{ route('hr_view_leave_request') }}">
                             <i class="fa fa-user-times sidemenu_icon"></i>
                             <span class="side-menu__label">Leaves</span>
                         </a>
@@ -90,7 +89,15 @@
                     <li class="slide">
                         <a class="side-menu__item" href="{{ route('activity_tracker.index.with') }}">
                             <i class="fa fa-user-times sidemenu_icon"></i>
-                            	<span class="side-menu__label">Activity Tracker</span>
+                            <span class="side-menu__label">Activity Tracker</span>
+                        </a>
+                    </li>
+
+
+                    <li class="slide">
+                        <a class="side-menu__item" href="{{ route('hr.upload.form') }}">
+                            <i class="fa fa-user-times sidemenu_icon"></i>
+                            <span class="side-menu__label">Sheet Process</span>
                         </a>
                     </li>
 
