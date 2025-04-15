@@ -13,9 +13,10 @@
             <div class="card">
                 <div class="card-body table-responsive">
                     @if ($files->count())
-                        <table class="table table-bordered">
+                        <table class="table table-vcenter text-nowrap table-bordered border-bottom dataTable no-footer">
                             <thead>
                                 <tr>
+                                    <th>S No.</th>
                                     <th>File Name</th>
                                     <th>Uploaded At</th>
                                     <th>Action</th>
@@ -24,6 +25,8 @@
                             <tbody>
                                 @foreach ($files as $file)
                                     <tr>
+                                        <td>{{ $loop->iteration + ($files->currentPage() - 1) * $files->perPage() }}</td>
+                                        <!-- Auto-incrementing ID -->
                                         <td>{{ $file->original_name }}</td>
                                         <td>{{ $file->created_at->format('d M Y, h:i A') }}</td>
                                         <td>
@@ -40,6 +43,9 @@
                         <p>No files available.</p>
                     @endif
                 </div>
+            </div>
+            <div class="row">
+                {{ $files->links() }}
             </div>
 
         </div>

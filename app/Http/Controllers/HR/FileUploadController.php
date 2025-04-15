@@ -12,9 +12,10 @@ class FileUploadController extends Controller
 
     public function create()
     {
-        $files = UploadedFile::latest()->get(); // or paginate if needed
+        $files = UploadedFile::latest()->paginate(10); // Adjust number as needed
         return view('HR.upload_file', compact('files'));
     }
+
     public function store(Request $request)
     {
         $request->validate([
