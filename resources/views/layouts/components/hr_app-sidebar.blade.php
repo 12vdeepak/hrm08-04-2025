@@ -82,13 +82,13 @@
 
                     <li class="slide">
                         <a class="side-menu__item" href="{{ route('employee_leave_request') }}">
-                            <i class="fa fa-user-times sidemenu_icon"></i>
+                            <i class="fa fa-envelope sidemenu_icon"></i>
                             <span class="side-menu__label">Employee Leave Requests</span>
                         </a>
                     </li>
                     <li class="slide">
                         <a class="side-menu__item" href="{{ route('activity_tracker.index.with') }}">
-                            <i class="fa fa-user-times sidemenu_icon"></i>
+                            <i class="fa fa-line-chart sidemenu_icon"></i>
                             <span class="side-menu__label">Activity Tracker</span>
                         </a>
                     </li>
@@ -96,7 +96,7 @@
 
                     <li class="slide">
                         <a class="side-menu__item" href="{{ route('hr.upload.form') }}">
-                            <i class="fa fa-user-times sidemenu_icon"></i>
+                            <i class="fa fa-file-excel-o sidemenu_icon"></i>
                             <span class="side-menu__label">Sheet Process</span>
                         </a>
                     </li>
