@@ -28,6 +28,7 @@ use App\Http\Controllers\User\TimeTrackerController;
 use App\Http\Controllers\HR\HrCompanyPolicyController;
 use App\Http\Controllers\HR\AnnouncementController;
 use App\Http\Controllers\HR\FileUploadController;
+use App\Http\Controllers\User\EmployeeFileViewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -152,4 +153,5 @@ Route::group(['middleware' => ['user'], 'prefix' => '/'], function () {
     Route::get('change-password', [UserDashboardController::class, 'change_password'])->name('change-password');
     Route::post('change-password-post', [UserDashboardController::class, 'change_password_post'])->name('change-password-post');
     Route::get('mark-as-all-read', [UserDashboardController::class, 'markasallread'])->name('mark-as-all-read-user');
+    Route::get('files', [EmployeeFileViewController::class, 'index'])->name('employee.files')->middleware('auth');
 });
