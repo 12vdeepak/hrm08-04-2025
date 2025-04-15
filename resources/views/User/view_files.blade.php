@@ -24,7 +24,7 @@
                             <tbody>
                                 @foreach ($files as $file)
                                     <tr>
-                                        <td>{{ $file->file_name }}</td>
+                                        <td>{{ $file->original_name }}</td>
                                         <td>{{ $file->created_at->format('d M Y, h:i A') }}</td>
                                         <td>
                                             <a href="{{ asset('storage/' . $file->file_path) }}" target="_blank"
