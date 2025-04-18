@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 
 class DailyUserStatusReportMail extends Mailable
 {
-   use Queueable, SerializesModels;
+    use Queueable, SerializesModels;
 
     public $absentUsers;
     public $leaveUsers;
@@ -25,6 +25,11 @@ class DailyUserStatusReportMail extends Mailable
     public function build()
     {
         return $this->subject('Daily Attendance Status Report')
-                    ->view('emails.daily_user_status_report');
+            ->cc([
+                'hr@quantumitinnovation.com',
+                'mansi@quantumitinnovation.com',
+                'sanchitha@quantumitinnovation.com',
+            ])
+            ->view('emails.daily_user_status_report');
     }
 }
