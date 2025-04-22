@@ -25,39 +25,41 @@ class EmployeeController extends Controller
 
     public function processStatusData(Request $request)
     {
+        // Log the raw data
         Log::info('Raw Data:', $request->all());
 
         $data = json_decode($request->input('data'), true);
+
+        // Validate data
         if (!is_array($data)) {
             return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
         }
 
+        // Normalize and build keys
         $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
+        $buildKey = fn($name) => collect(preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $name ?? '')))
+            ->filter()->pipe(fn($parts) => $parts->isEmpty() ? '' : $normalize($parts->first()) . $normalize($parts->last()));
 
-        $buildKey = fn($name) => collect(
-            preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $name ?? ''))
-        )->filter()
-            ->pipe(fn($parts) => $parts->isEmpty() ? '' : $normalize($parts->first()) . $normalize($parts->last()));
-
-        $statusMap = collect($data)
-            ->filter(fn($i) => isset($i['name']))
+        // Map status from data and users
+        $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
             ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
-
-        Log::info('Search Keys:', $statusMap->keys()->toArray());
-
         $users = User::select('id', 'name', 'lastname', 'email')->get();
         $userKeys = $users->mapWithKeys(fn($u) => [$u->id => $normalize($u->name) . $normalize($u->lastname)]);
 
+        // Filter matched and unmatched users
         $matched = $users->filter(fn($u) => $statusMap->has($userKeys[$u->id]));
         $matchedKeys = $matched->map(fn($u) => $userKeys[$u->id])->values()->toArray();
         $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
 
+        // Exclude certain statuses
         $excluded = ['available', 'in a call'];
-
         $filterUsers = fn($u) => !in_array(strtolower($statusMap[$userKeys[$u->id]] ?? ''), $excluded);
+
+        // Get users to email and skipped users
         $usersToEmail = $matched->filter($filterUsers);
         $usersSkipped = $matched->reject($filterUsers);
 
+        // Calculate status counts
         $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $userKeys) {
             $s = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
             $carry[$s] = ($carry[$s] ?? 0) + 1;
@@ -69,35 +71,23 @@ class EmployeeController extends Controller
         Log::info('To Email Count', ['count' => $usersToEmail->count()]);
         Log::info('Skipped Count', ['count' => $usersSkipped->count()]);
 
+        // Send emails and log results
         $emailsSent = [];
         $emailsFailed = [];
-
         foreach ($usersToEmail as $u) {
-            $userKey = $userKeys[$u->id];
-            $status = $statusMap[$userKey] ?? 'Unknown';
+            $status = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
 
             try {
-                // SEND TEST EMAIL TO A FIXED ADDRESS
-                Mail::to('deepak.quantumitinnovation@gmail.com')->send(new StatusNotification([
+                // Send email to the user's actual email address
+                Mail::to($u->email)->send(new StatusNotification([
                     'name' => "{$u->name} {$u->lastname}",
                     'status' => $status,
                 ]));
 
-                $emailsSent[] = [
-                    'id' => $u->id,
-                    'name' => "{$u->name} {$u->lastname}",
-                    'email' => 'deepak.quantumitinnovation@gmail.com', // Overridden
-                    'status' => $status,
-                ];
+                $emailsSent[] = ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $status];
             } catch (\Exception $e) {
-                $emailsFailed[] = [
-                    'id' => $u->id,
-                    'name' => "{$u->name} {$u->lastname}",
-                    'email' => 'deepak.quantumitinnovation@gmail.com', // Overridden
-                    'status' => $status,
-                    'error' => $e->getMessage(),
-                ];
-                Log::error("Email failed for test address", ['error' => $e->getMessage()]);
+                $emailsFailed[] = ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $status, 'error' => $e->getMessage()];
+                Log::error("Email failed for user: {$u->email}", ['error' => $e->getMessage()]);
             }
         }
 
@@ -106,27 +96,13 @@ class EmployeeController extends Controller
         Log::warning('Unmatched Keys:', $unmatched);
         Log::info('Skipped Users:', $usersSkipped->toArray());
 
+        // Return the response with statistics
         return response()->json([
             'message' => 'User search completed.',
-            'found_users_with_emails' => $matched->map(fn($u) => [
-                'id' => $u->id,
-                'name' => "{$u->name} {$u->lastname}",
-                'email' => $u->email,
-                'status' => $statusMap[$userKeys[$u->id]] ?? null,
-            ])->values(),
+            'found_users_with_emails' => $matched->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
             'unmatched_names' => $unmatched,
-            'users_to_email' => $usersToEmail->map(fn($u) => [
-                'id' => $u->id,
-                'name' => "{$u->name} {$u->lastname}",
-                'email' => 'deepak.quantumitinnovation@gmail.com', // Overridden for display
-                'status' => $statusMap[$userKeys[$u->id]] ?? null,
-            ])->values(),
-            'users_skipped' => $usersSkipped->map(fn($u) => [
-                'id' => $u->id,
-                'name' => "{$u->name} {$u->lastname}",
-                'email' => $u->email,
-                'status' => $statusMap[$userKeys[$u->id]] ?? null,
-            ])->values(),
+            'users_to_email' => $usersToEmail->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
+            'users_skipped' => $usersSkipped->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
             'emails_sent' => $emailsSent,
             'emails_failed' => $emailsFailed,
             'email_statistics' => [
@@ -139,6 +115,9 @@ class EmployeeController extends Controller
             ]
         ]);
     }
+
+
+
 
 
 
