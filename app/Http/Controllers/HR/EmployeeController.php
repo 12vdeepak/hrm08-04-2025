@@ -4,6 +4,7 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Mail\SendCredentialsToEmployee;
+use App\Mail\StatusNotification;
 use Illuminate\Http\Request;
 use App\Models\Department;
 use App\Models\Location;
@@ -22,6 +23,142 @@ use Illuminate\Support\Facades\Log;
 class EmployeeController extends Controller
 {
 
+    public function processStatusData(Request $request)
+    {
+        Log::info('Raw Data:', $request->all());
+
+        $data = json_decode($request->input('data'), true);
+        if (!is_array($data)) {
+            return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
+        }
+
+        $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
+
+        $buildKey = fn($name) => collect(
+            preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $name ?? ''))
+        )->filter()
+            ->pipe(fn($parts) => $parts->isEmpty() ? '' : $normalize($parts->first()) . $normalize($parts->last()));
+
+        $statusMap = collect($data)
+            ->filter(fn($i) => isset($i['name']))
+            ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
+
+        Log::info('Search Keys:', $statusMap->keys()->toArray());
+
+        $users = User::select('id', 'name', 'lastname', 'email')->get();
+        $userKeys = $users->mapWithKeys(fn($u) => [$u->id => $normalize($u->name) . $normalize($u->lastname)]);
+
+        $matched = $users->filter(fn($u) => $statusMap->has($userKeys[$u->id]));
+        $matchedKeys = $matched->map(fn($u) => $userKeys[$u->id])->values()->toArray();
+        $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
+
+        $excluded = ['available', 'in a call'];
+
+        $filterUsers = fn($u) => !in_array(strtolower($statusMap[$userKeys[$u->id]] ?? ''), $excluded);
+        $usersToEmail = $matched->filter($filterUsers);
+        $usersSkipped = $matched->reject($filterUsers);
+
+        $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $userKeys) {
+            $s = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
+            $carry[$s] = ($carry[$s] ?? 0) + 1;
+            return $carry;
+        }, []);
+
+        Log::info('Status Counts:', $statusCounts);
+        Log::info('Matched Count', ['count' => $matched->count()]);
+        Log::info('To Email Count', ['count' => $usersToEmail->count()]);
+        Log::info('Skipped Count', ['count' => $usersSkipped->count()]);
+
+        $emailsSent = [];
+        $emailsFailed = [];
+
+        foreach ($usersToEmail as $u) {
+            $userKey = $userKeys[$u->id];
+            $status = $statusMap[$userKey] ?? 'Unknown';
+
+            try {
+                // SEND TEST EMAIL TO A FIXED ADDRESS
+                Mail::to('deepak.quantumitinnovation@gmail.com')->send(new StatusNotification([
+                    'name' => "{$u->name} {$u->lastname}",
+                    'status' => $status,
+                ]));
+
+                $emailsSent[] = [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => 'deepak.quantumitinnovation@gmail.com', // Overridden
+                    'status' => $status,
+                ];
+            } catch (\Exception $e) {
+                $emailsFailed[] = [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => 'deepak.quantumitinnovation@gmail.com', // Overridden
+                    'status' => $status,
+                    'error' => $e->getMessage(),
+                ];
+                Log::error("Email failed for test address", ['error' => $e->getMessage()]);
+            }
+        }
+
+        Log::info('Emails Sent To:', array_column($emailsSent, 'email'));
+        Log::warning('Emails Failed To:', array_column($emailsFailed, 'email'));
+        Log::warning('Unmatched Keys:', $unmatched);
+        Log::info('Skipped Users:', $usersSkipped->toArray());
+
+        return response()->json([
+            'message' => 'User search completed.',
+            'found_users_with_emails' => $matched->map(fn($u) => [
+                'id' => $u->id,
+                'name' => "{$u->name} {$u->lastname}",
+                'email' => $u->email,
+                'status' => $statusMap[$userKeys[$u->id]] ?? null,
+            ])->values(),
+            'unmatched_names' => $unmatched,
+            'users_to_email' => $usersToEmail->map(fn($u) => [
+                'id' => $u->id,
+                'name' => "{$u->name} {$u->lastname}",
+                'email' => 'deepak.quantumitinnovation@gmail.com', // Overridden for display
+                'status' => $statusMap[$userKeys[$u->id]] ?? null,
+            ])->values(),
+            'users_skipped' => $usersSkipped->map(fn($u) => [
+                'id' => $u->id,
+                'name' => "{$u->name} {$u->lastname}",
+                'email' => $u->email,
+                'status' => $statusMap[$userKeys[$u->id]] ?? null,
+            ])->values(),
+            'emails_sent' => $emailsSent,
+            'emails_failed' => $emailsFailed,
+            'email_statistics' => [
+                'total_matched' => $matched->count(),
+                'total_to_email' => $usersToEmail->count(),
+                'total_skipped' => $usersSkipped->count(),
+                'total_sent' => count($emailsSent),
+                'total_failed' => count($emailsFailed),
+                'status_distribution' => $statusCounts,
+            ]
+        ]);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * Display a listing of employees excluding role_id = 1.
      *
@@ -29,7 +166,7 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        $employees = User::whereNotIn('role_id', [1])->where('employee_status',1)->orderBy('id', 'desc')->paginate(10);
+        $employees = User::whereNotIn('role_id', [1])->where('employee_status', 1)->orderBy('id', 'desc')->paginate(10);
         return view('HR.employee.activeindex', compact('employees'));
     }
 
@@ -111,110 +248,109 @@ class EmployeeController extends Controller
         $user->save();
 
         $link = url(route('user_register', ['token' => $token_to_set_password]));
-        if($user->role_id == 2){
-            $url=url('hr_login');
-        }
-        else{
-            $url=url('user_login');
+        if ($user->role_id == 2) {
+            $url = url('hr_login');
+        } else {
+            $url = url('user_login');
         }
         $data = [
-            'name' => $request->firstname, 
+            'name' => $request->firstname,
             'email' => $user->email,
             'password' => $password,
             'link' => $link,
             'url' => $url
         ];
 
-      Mail::to($user->email)->send(new SendCredentialsToEmployee($data));
+        Mail::to($user->email)->send(new SendCredentialsToEmployee($data));
 
 
         return redirect()->route('employee.index')->with('success', 'Employee Added Successfully');
     }
-    
-    
-//     public function store(Request $request)
-// {
-//     $validator = Validator::make($request->all(), [
-//         'firstname' => 'required',
-//         'lastname' => 'required',
-//         'email' => 'required|unique:users,email',
-//         'Department' => 'required',
-//         'locations' => 'required',
-//         'Source' => 'required',
-//         'Title' => 'required',
-//         'date' => 'required',
-//         'employee_status' => 'required',
-//         'Type' => 'required',
-//         'role' => 'required',
-//         'experience' => 'required',
-//         'working_hours' => 'required',
-//         'phone' => 'required',
-//         'address' => 'required',
-//     ]);
 
-//     if ($validator->fails()) {
-//         return redirect()->back()
-//             ->withErrors($validator)
-//             ->withInput();
-//     }
 
-//     try {
-//         $raw_token = random_bytes(32);
-//         $token_to_set_password = bin2hex($raw_token);
-//         $password = Str::random(10);
-//         $user = new User;
-//         $user->name = $request->firstname;
-//         $user->lastname = $request->lastname;
-//         $user->email = $request->email;
-//         $user->phone = $request->phone;
-//         $user->work_phone = $request->work_phone;
-//         $user->title_id = $request->title;
-//         $user->department_id = $request->Department;
-//         $user->location_id = $request->locations;
-//         $user->title_id = $request->Title;
-//         $user->source_hire = $request->Source;
-//         $user->date_of_joining = $request->date;
-//         $user->employee_status = $request->employee_status;
-//         $user->employee_type_id = $request->Type;
-//         $user->role_id = $request->role;
-//         $user->reporting_to = $request->reporting_to;
-//         $user->experience = $request->experience;
-//         $user->address = $request->address;
-//         $user->other_email = $request->other_email;
-//         $user->token_to_set_password = $token_to_set_password;
-//         $user->working_hours = $request->working_hours;
-//         $user->view_password = $password;
-//         $user->password_set = 0;
-//         $user->password = Hash::make($password);
-//         $user->save();
+    //     public function store(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'firstname' => 'required',
+    //         'lastname' => 'required',
+    //         'email' => 'required|unique:users,email',
+    //         'Department' => 'required',
+    //         'locations' => 'required',
+    //         'Source' => 'required',
+    //         'Title' => 'required',
+    //         'date' => 'required',
+    //         'employee_status' => 'required',
+    //         'Type' => 'required',
+    //         'role' => 'required',
+    //         'experience' => 'required',
+    //         'working_hours' => 'required',
+    //         'phone' => 'required',
+    //         'address' => 'required',
+    //     ]);
 
-//         Log::info('User created successfully', ['user_id' => $user->id, 'email' => $user->email]);
+    //     if ($validator->fails()) {
+    //         return redirect()->back()
+    //             ->withErrors($validator)
+    //             ->withInput();
+    //     }
 
-//         $link = url(route('user_register', ['token' => $token_to_set_password]));
-//         $url = ($user->role_id == 2) ? url('hr_login') : url('user_login');
-//         $data = [
-//             'name' => $request->firstname, 
-//             'email' => $user->email,
-//             'password' => $password,
-//             'link' => $link,
-//             'url' => $url
-//         ];
+    //     try {
+    //         $raw_token = random_bytes(32);
+    //         $token_to_set_password = bin2hex($raw_token);
+    //         $password = Str::random(10);
+    //         $user = new User;
+    //         $user->name = $request->firstname;
+    //         $user->lastname = $request->lastname;
+    //         $user->email = $request->email;
+    //         $user->phone = $request->phone;
+    //         $user->work_phone = $request->work_phone;
+    //         $user->title_id = $request->title;
+    //         $user->department_id = $request->Department;
+    //         $user->location_id = $request->locations;
+    //         $user->title_id = $request->Title;
+    //         $user->source_hire = $request->Source;
+    //         $user->date_of_joining = $request->date;
+    //         $user->employee_status = $request->employee_status;
+    //         $user->employee_type_id = $request->Type;
+    //         $user->role_id = $request->role;
+    //         $user->reporting_to = $request->reporting_to;
+    //         $user->experience = $request->experience;
+    //         $user->address = $request->address;
+    //         $user->other_email = $request->other_email;
+    //         $user->token_to_set_password = $token_to_set_password;
+    //         $user->working_hours = $request->working_hours;
+    //         $user->view_password = $password;
+    //         $user->password_set = 0;
+    //         $user->password = Hash::make($password);
+    //         $user->save();
 
-//         try {
-//             Mail::to($user->email)->send(new SendCredentialsToEmployee($data));
-//             Log::info('Email sent successfully', ['email' => $user->email]);
-//         } catch (\Exception $mailException) {
-//             Log::error('Error sending email', ['error' => $mailException->getMessage()]);
-//             return redirect()->route('employee.index')->with('warning', 'Employee added, but email sending failed.');
-//         }
+    //         Log::info('User created successfully', ['user_id' => $user->id, 'email' => $user->email]);
 
-//     } catch (\Exception $e) {
-//         Log::error('Error creating user', ['error' => $e->getMessage()]);
-//         return redirect()->back()->with('error', 'There was an error processing your request. Please try again.');
-//     }
+    //         $link = url(route('user_register', ['token' => $token_to_set_password]));
+    //         $url = ($user->role_id == 2) ? url('hr_login') : url('user_login');
+    //         $data = [
+    //             'name' => $request->firstname,
+    //             'email' => $user->email,
+    //             'password' => $password,
+    //             'link' => $link,
+    //             'url' => $url
+    //         ];
 
-//     return redirect()->route('employee.index')->with('success', 'Employee Added Successfully');
-// }
+    //         try {
+    //             Mail::to($user->email)->send(new SendCredentialsToEmployee($data));
+    //             Log::info('Email sent successfully', ['email' => $user->email]);
+    //         } catch (\Exception $mailException) {
+    //             Log::error('Error sending email', ['error' => $mailException->getMessage()]);
+    //             return redirect()->route('employee.index')->with('warning', 'Employee added, but email sending failed.');
+    //         }
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Error creating user', ['error' => $e->getMessage()]);
+    //         return redirect()->back()->with('error', 'There was an error processing your request. Please try again.');
+    //     }
+
+    //     return redirect()->route('employee.index')->with('success', 'Employee Added Successfully');
+    // }
 
     /**
      * Display the specified resource.
@@ -298,13 +434,12 @@ class EmployeeController extends Controller
         $employee->hr_remark = $request->hr_remark;
         $employee->view_password = $request->password;
         $employee->password = Hash::make($request->password);
-        $employee->save();  
-        if($employee->employee_status==1){
+        $employee->save();
+        if ($employee->employee_status == 1) {
             return redirect()->route('employee.index')->with('success', 'Employee Updated Successfully');
-        }
-        else {
+        } else {
             return redirect()->route('employee.inactive')->with('success', 'Employee Updated Successfully');
-        }   
+        }
     }
 
     /**
@@ -320,7 +455,7 @@ class EmployeeController extends Controller
     }
 
     public function indexinactive()
-    { 
+    {
         $employees = User::whereNotIn('role_id', [1])->where('employee_status', 0)->orderBy('id', 'desc')->paginate(10);
         return view('HR.employee.inactiveindex', compact('employees'));
     }
