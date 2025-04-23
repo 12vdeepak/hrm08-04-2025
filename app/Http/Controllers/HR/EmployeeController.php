@@ -40,15 +40,12 @@ class EmployeeController extends Controller
             }
 
             $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
-
             $removePrefix = fn($name) => preg_replace('/^([0-9]+|[A-Z]+(\s+[0-9]+)?|[A-Z]\s*[0-9]*)\.\s*/i', '', $name ?? '');
 
             $buildKey = function ($name) use ($normalize, $removePrefix) {
                 $clean = preg_replace('/[^a-z\s]/i', '', $removePrefix($name ?? ''));
                 $parts = array_filter(explode(' ', $clean));
-                return count($parts) >= 2
-                    ? $normalize(reset($parts)) . $normalize(end($parts))
-                    : (count($parts) === 1 ? $normalize(reset($parts)) : '');
+                return implode('', array_map($normalize, $parts));
             };
 
             $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
@@ -134,6 +131,7 @@ class EmployeeController extends Controller
             return response()->json(['error' => 'Server error.'], 500);
         }
     }
+
 
 
 
