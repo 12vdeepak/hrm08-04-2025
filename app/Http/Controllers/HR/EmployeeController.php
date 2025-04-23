@@ -23,98 +23,223 @@ use Illuminate\Support\Facades\Log;
 class EmployeeController extends Controller
 {
 
+    // public function processStatusData(Request $request)
+    // {
+    //     // Log the raw data
+    //     Log::info('Raw Data:', $request->all());
+
+    //     $data = json_decode($request->input('data'), true);
+
+    //     // Validate data
+    //     if (!is_array($data)) {
+    //         return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
+    //     }
+
+    //     // Normalize and build keys
+    //     $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
+    //     $buildKey = fn($name) => collect(preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $name ?? '')))
+    //         ->filter()->pipe(fn($parts) => $parts->isEmpty() ? '' : $normalize($parts->first()) . $normalize($parts->last()));
+
+    //     // Map status from data and users
+    //     $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
+    //         ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
+    //     $users = User::select('id', 'name', 'lastname', 'email')->get();
+    //     $userKeys = $users->mapWithKeys(fn($u) => [$u->id => $normalize($u->name) . $normalize($u->lastname)]);
+
+    //     // Filter matched and unmatched users
+    //     $matched = $users->filter(fn($u) => $statusMap->has($userKeys[$u->id]));
+    //     $matchedKeys = $matched->map(fn($u) => $userKeys[$u->id])->values()->toArray();
+    //     $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
+
+    //     // Exclude certain statuses
+    //     $excluded = ['available', 'in a call'];
+    //     $filterUsers = fn($u) => !in_array(strtolower($statusMap[$userKeys[$u->id]] ?? ''), $excluded);
+
+    //     // Get users to email and skipped users
+    //     $usersToEmail = $matched->filter($filterUsers);
+    //     $usersSkipped = $matched->reject($filterUsers);
+
+    //     // Calculate status counts
+    //     $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $userKeys) {
+    //         $s = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
+    //         $carry[$s] = ($carry[$s] ?? 0) + 1;
+    //         return $carry;
+    //     }, []);
+
+    //     Log::info('Status Counts:', $statusCounts);
+    //     Log::info('Matched Count', ['count' => $matched->count()]);
+    //     Log::info('To Email Count', ['count' => $usersToEmail->count()]);
+    //     Log::info('Skipped Count', ['count' => $usersSkipped->count()]);
+
+    //     // Send emails and log results
+    //     $emailsSent = [];
+    //     $emailsFailed = [];
+    //     foreach ($usersToEmail as $u) {
+    //         $status = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
+
+    //         try {
+    //             // Send email to the user's actual email address
+    //             Mail::to($u->email)->send(new StatusNotification([
+    //                 'name' => "{$u->name} {$u->lastname}",
+    //                 'status' => $status,
+    //             ]));
+
+    //             $emailsSent[] = ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $status];
+    //         } catch (\Exception $e) {
+    //             $emailsFailed[] = ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $status, 'error' => $e->getMessage()];
+    //             Log::error("Email failed for user: {$u->email}", ['error' => $e->getMessage()]);
+    //         }
+    //     }
+
+    //     Log::info('Emails Sent To:', array_column($emailsSent, 'email'));
+    //     Log::warning('Emails Failed To:', array_column($emailsFailed, 'email'));
+    //     Log::warning('Unmatched Keys:', $unmatched);
+    //     Log::info('Skipped Users:', $usersSkipped->toArray());
+
+    //     // Return the response with statistics
+    //     return response()->json([
+    //         'message' => 'User search completed.',
+    //         'found_users_with_emails' => $matched->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
+    //         'unmatched_names' => $unmatched,
+    //         'users_to_email' => $usersToEmail->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
+    //         'users_skipped' => $usersSkipped->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
+    //         'emails_sent' => $emailsSent,
+    //         'emails_failed' => $emailsFailed,
+    //         'email_statistics' => [
+    //             'total_matched' => $matched->count(),
+    //             'total_to_email' => $usersToEmail->count(),
+    //             'total_skipped' => $usersSkipped->count(),
+    //             'total_sent' => count($emailsSent),
+    //             'total_failed' => count($emailsFailed),
+    //             'status_distribution' => $statusCounts,
+    //         ]
+    //     ]);
+    // }
+
+
     public function processStatusData(Request $request)
     {
-        // Log the raw data
-        Log::info('Raw Data:', $request->all());
+        try {
+            // Log the raw request data
+            Log::info('Raw Request:', $request->all());
 
-        $data = json_decode($request->input('data'), true);
+            $data = $request->input('data');
 
-        // Validate data
-        if (!is_array($data)) {
-            return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
-        }
-
-        // Normalize and build keys
-        $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
-        $buildKey = fn($name) => collect(preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $name ?? '')))
-            ->filter()->pipe(fn($parts) => $parts->isEmpty() ? '' : $normalize($parts->first()) . $normalize($parts->last()));
-
-        // Map status from data and users
-        $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
-            ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
-        $users = User::select('id', 'name', 'lastname', 'email')->get();
-        $userKeys = $users->mapWithKeys(fn($u) => [$u->id => $normalize($u->name) . $normalize($u->lastname)]);
-
-        // Filter matched and unmatched users
-        $matched = $users->filter(fn($u) => $statusMap->has($userKeys[$u->id]));
-        $matchedKeys = $matched->map(fn($u) => $userKeys[$u->id])->values()->toArray();
-        $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
-
-        // Exclude certain statuses
-        $excluded = ['available', 'in a call'];
-        $filterUsers = fn($u) => !in_array(strtolower($statusMap[$userKeys[$u->id]] ?? ''), $excluded);
-
-        // Get users to email and skipped users
-        $usersToEmail = $matched->filter($filterUsers);
-        $usersSkipped = $matched->reject($filterUsers);
-
-        // Calculate status counts
-        $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $userKeys) {
-            $s = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
-            $carry[$s] = ($carry[$s] ?? 0) + 1;
-            return $carry;
-        }, []);
-
-        Log::info('Status Counts:', $statusCounts);
-        Log::info('Matched Count', ['count' => $matched->count()]);
-        Log::info('To Email Count', ['count' => $usersToEmail->count()]);
-        Log::info('Skipped Count', ['count' => $usersSkipped->count()]);
-
-        // Send emails and log results
-        $emailsSent = [];
-        $emailsFailed = [];
-        foreach ($usersToEmail as $u) {
-            $status = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
-
-            try {
-                // Send email to the user's actual email address
-                Mail::to($u->email)->send(new StatusNotification([
-                    'name' => "{$u->name} {$u->lastname}",
-                    'status' => $status,
-                ]));
-
-                $emailsSent[] = ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $status];
-            } catch (\Exception $e) {
-                $emailsFailed[] = ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $status, 'error' => $e->getMessage()];
-                Log::error("Email failed for user: {$u->email}", ['error' => $e->getMessage()]);
+            // Handle stringified JSON or already-decoded arrays
+            if (is_string($data)) {
+                $data = json_decode($data, true);
             }
+
+            if (!is_array($data)) {
+                Log::error('Invalid "data" format', ['received' => $data]);
+                return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
+            }
+
+            $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
+            $buildKey = fn($name) => collect(preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $name ?? '')))
+                ->filter()
+                ->pipe(fn($parts) => $parts->isEmpty() ? '' : $normalize($parts->first()) . $normalize($parts->last()));
+
+            $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
+                ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
+
+            $users = User::select('id', 'name', 'lastname', 'email')->get();
+            $userKeys = $users->mapWithKeys(fn($u) => [$u->id => $normalize($u->name) . $normalize($u->lastname)]);
+
+            $matched = $users->filter(fn($u) => $statusMap->has($userKeys[$u->id]));
+            $matchedKeys = $matched->map(fn($u) => $userKeys[$u->id])->values()->toArray();
+            $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
+
+            $excluded = ['available', 'in a call'];
+            $filterUsers = fn($u) => !in_array(strtolower($statusMap[$userKeys[$u->id]] ?? ''), $excluded);
+
+            $usersToEmail = $matched->filter($filterUsers);
+            $usersSkipped = $matched->reject($filterUsers);
+
+            $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $userKeys) {
+                $s = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
+                $carry[$s] = ($carry[$s] ?? 0) + 1;
+                return $carry;
+            }, []);
+
+            Log::info('Status Counts:', $statusCounts);
+            Log::info('Matched Count', ['count' => $matched->count()]);
+            Log::info('To Email Count', ['count' => $usersToEmail->count()]);
+            Log::info('Skipped Count', ['count' => $usersSkipped->count()]);
+
+            $emailsSent = [];
+            $emailsFailed = [];
+
+            foreach ($usersToEmail as $u) {
+                $status = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
+
+                try {
+                    Mail::to($u->email)->send(new StatusNotification([
+                        'name' => "{$u->name} {$u->lastname}",
+                        'status' => $status,
+                    ]));
+
+                    $emailsSent[] = [
+                        'id' => $u->id,
+                        'name' => "{$u->name} {$u->lastname}",
+                        'email' => $u->email,
+                        'status' => $status
+                    ];
+                } catch (\Exception $e) {
+                    $emailsFailed[] = [
+                        'id' => $u->id,
+                        'name' => "{$u->name} {$u->lastname}",
+                        'email' => $u->email,
+                        'status' => $status,
+                        'error' => $e->getMessage()
+                    ];
+                    Log::error("Email failed for user: {$u->email}", ['error' => $e->getMessage()]);
+                }
+            }
+
+            Log::info('Emails Sent To:', array_column($emailsSent, 'email'));
+            Log::warning('Emails Failed To:', array_column($emailsFailed, 'email'));
+            Log::warning('Unmatched Keys:', $unmatched);
+            Log::info('Skipped Users:', $usersSkipped->toArray());
+
+            return response()->json([
+                'message' => 'User search completed.',
+                'found_users_with_emails' => $matched->map(fn($u) => [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => $u->email,
+                    'status' => $statusMap[$userKeys[$u->id]] ?? null
+                ])->values(),
+                'unmatched_names' => $unmatched,
+                'users_to_email' => $usersToEmail->map(fn($u) => [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => $u->email,
+                    'status' => $statusMap[$userKeys[$u->id]] ?? null
+                ])->values(),
+                'users_skipped' => $usersSkipped->map(fn($u) => [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => $u->email,
+                    'status' => $statusMap[$userKeys[$u->id]] ?? null
+                ])->values(),
+                'emails_sent' => $emailsSent,
+                'emails_failed' => $emailsFailed,
+                'email_statistics' => [
+                    'total_matched' => $matched->count(),
+                    'total_to_email' => $usersToEmail->count(),
+                    'total_skipped' => $usersSkipped->count(),
+                    'total_sent' => count($emailsSent),
+                    'total_failed' => count($emailsFailed),
+                    'status_distribution' => $statusCounts,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Unhandled error in processStatusData', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Server error.'], 500);
         }
-
-        Log::info('Emails Sent To:', array_column($emailsSent, 'email'));
-        Log::warning('Emails Failed To:', array_column($emailsFailed, 'email'));
-        Log::warning('Unmatched Keys:', $unmatched);
-        Log::info('Skipped Users:', $usersSkipped->toArray());
-
-        // Return the response with statistics
-        return response()->json([
-            'message' => 'User search completed.',
-            'found_users_with_emails' => $matched->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
-            'unmatched_names' => $unmatched,
-            'users_to_email' => $usersToEmail->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
-            'users_skipped' => $usersSkipped->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$userKeys[$u->id]] ?? null])->values(),
-            'emails_sent' => $emailsSent,
-            'emails_failed' => $emailsFailed,
-            'email_statistics' => [
-                'total_matched' => $matched->count(),
-                'total_to_email' => $usersToEmail->count(),
-                'total_skipped' => $usersSkipped->count(),
-                'total_sent' => count($emailsSent),
-                'total_failed' => count($emailsFailed),
-                'status_distribution' => $statusCounts,
-            ]
-        ]);
     }
+
 
 
 
