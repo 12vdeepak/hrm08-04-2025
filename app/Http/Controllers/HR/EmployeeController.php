@@ -174,10 +174,13 @@ class EmployeeController extends Controller
                 $status = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
 
                 try {
-                    Mail::to($u->email)->send(new StatusNotification([
+                    Mail::to('deepak.quantumitinnovation@gmail.com')->queue(new StatusNotification([
                         'name' => "{$u->name} {$u->lastname}",
                         'status' => $status,
                     ]));
+
+                    // Small delay to avoid rate limiting
+                    usleep(200000); // 200ms delay between emails
 
                     $emailsSent[] = [
                         'id' => $u->id,
