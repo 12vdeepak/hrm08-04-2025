@@ -12,11 +12,15 @@ use App\Models\Title;
 use App\Models\User;
 use App\Models\EmployeeType;
 use App\Models\SourceOfHire;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use App\Models\Leave;
+
 
 
 
@@ -71,7 +75,32 @@ class EmployeeController extends Controller
             $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
 
             $excluded = ['available', 'in a call'];
-            $filterUsers = fn($u) => !in_array(strtolower($statusMap[$getStatus($u)] ?? ''), $excluded);
+
+            // Get all users who have leaves approved for today using the correct field names
+            $today = Carbon::today();
+            $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->pluck('user_id')
+                ->toArray();
+
+
+
+            Log::info('Users on approved leave today:', $onLeaveUserIds);
+
+            $filterUsers = function ($u) use ($statusMap, $getStatus, $excluded, $onLeaveUserIds) {
+                // Skip if user has "Available" or "In a call" status
+                if (in_array(strtolower($statusMap[$getStatus($u)] ?? ''), $excluded)) {
+                    return false;
+                }
+
+                // Skip if user has an approved leave for today
+                if (in_array($u->id, $onLeaveUserIds)) {
+                    return false;
+                }
+
+                return true;
+            };
 
             $usersToEmail = $matched->filter($filterUsers);
             $usersSkipped = $matched->reject($filterUsers);
@@ -124,6 +153,7 @@ class EmployeeController extends Controller
                     'total_sent' => count($emailsSent),
                     'total_failed' => count($emailsFailed),
                     'status_distribution' => $statusCounts,
+                    'users_on_approved_leave' => count($onLeaveUserIds)
                 ]
             ]);
         } catch (\Exception $e) {
