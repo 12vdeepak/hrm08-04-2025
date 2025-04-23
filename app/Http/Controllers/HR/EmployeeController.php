@@ -136,28 +136,124 @@ class EmployeeController extends Controller
             }
 
             $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
-            $buildKey = fn($name) => collect(preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $name ?? '')))
-                ->filter()
-                ->pipe(fn($parts) => $parts->isEmpty() ? '' : $normalize($parts->first()) . $normalize($parts->last()));
+
+            // Comprehensive prefix removal function
+            $removePrefix = function ($name) {
+                if (empty($name)) return '';
+
+                // Remove any prefix pattern like "222.", "F 205.", "F.", etc.
+                // This single regex handles numeric prefixes, letter prefixes, or combinations
+                return preg_replace('/^([0-9]+|[A-Z]+(\s+[0-9]+)?|[A-Z]\s*[0-9]*)\.\s*/i', '', $name);
+            };
+
+            // Enhanced buildKey function that handles all types of prefixes
+            $buildKey = function ($name) use ($normalize, $removePrefix) {
+                if (empty($name)) return '';
+
+                // First, remove any kind of prefix
+                $cleanName = $removePrefix($name);
+
+                // Split the name into parts
+                $parts = preg_split('/\s+/', preg_replace('/[^a-z\s]/i', '', $cleanName));
+                $parts = array_filter($parts);
+
+                // If there are no valid parts, return empty string
+                if (empty($parts)) return '';
+
+                // Find potential actual name parts (exclude prefixes like single letters or alphanumeric codes)
+                $nameParts = [];
+                foreach ($parts as $part) {
+                    // Skip parts that look like prefixes (single letters or alphanumeric codes)
+                    if (strlen($part) <= 1 || is_numeric($part) || preg_match('/^[a-z]\d+$/i', $part)) {
+                        continue;
+                    }
+                    $nameParts[] = $part;
+                }
+
+                // If we couldn't find any name parts, fall back to original logic
+                if (empty($nameParts)) {
+                    return $normalize($parts[0]) . $normalize(end($parts));
+                }
+
+                // Otherwise use the first and last actual name parts
+                return $normalize($nameParts[0]) . $normalize(end($nameParts));
+            };
 
             $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
                 ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
 
             $users = User::select('id', 'name', 'lastname', 'email')->get();
-            $userKeys = $users->mapWithKeys(fn($u) => [$u->id => $normalize($u->name) . $normalize($u->lastname)]);
 
-            $matched = $users->filter(fn($u) => $statusMap->has($userKeys[$u->id]));
-            $matchedKeys = $matched->map(fn($u) => $userKeys[$u->id])->values()->toArray();
+            // Improved userKeys generation
+            $userKeys = $users->mapWithKeys(function ($u) use ($normalize, $buildKey, $removePrefix) {
+                // First try the standard approach
+                $standardKey = $normalize($u->name) . $normalize($u->lastname);
+
+                // Try with all types of prefixes removed
+                $cleanedName = $removePrefix($u->name);
+                $cleanedKey = $normalize($cleanedName) . $normalize($u->lastname);
+
+                // Also try the improved approach that handles prefixes for the full name
+                $fullName = $u->name . ' ' . $u->lastname;
+                $improvedKey = $buildKey($fullName);
+
+                // Generate an extra key for cases where the number may be part of the database name
+                // but not in MS Teams (like "222.Paras Prajapat" vs "Paras Prajapati")
+                $extraCleanedKey = $normalize($cleanedName);
+
+                // Return all keys for matching
+                return [$u->id => [$standardKey, $cleanedKey, $improvedKey, $extraCleanedKey]];
+            });
+
+            // Modified matching logic to check all key formats
+            $matched = $users->filter(function ($u) use ($statusMap, $userKeys) {
+                foreach ($userKeys[$u->id] as $key) {
+                    if (!empty($key) && $statusMap->has($key)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            // Get status for a user checking all key formats
+            $getStatus = function ($user) use ($statusMap, $userKeys) {
+                foreach ($userKeys[$user->id] as $key) {
+                    if (!empty($key) && $statusMap->has($key)) {
+                        return $statusMap[$key];
+                    }
+                }
+                return null;
+            };
+
+            // Get matching key for a user
+            $getMatchingKey = function ($user) use ($statusMap, $userKeys) {
+                foreach ($userKeys[$user->id] as $key) {
+                    if (!empty($key) && $statusMap->has($key)) {
+                        return $key;
+                    }
+                }
+                return null;
+            };
+
+            // Collect all matching keys for reporting
+            $matchedKeys = $matched->map(function ($u) use ($getMatchingKey) {
+                return $getMatchingKey($u);
+            })->filter()->values()->toArray();
+
+            // Get unmatched keys
             $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
 
             $excluded = ['available', 'in a call'];
-            $filterUsers = fn($u) => !in_array(strtolower($statusMap[$userKeys[$u->id]] ?? ''), $excluded);
+            $filterUsers = function ($u) use ($getStatus, $excluded) {
+                $status = $getStatus($u);
+                return !in_array(strtolower($status ?? ''), $excluded);
+            };
 
             $usersToEmail = $matched->filter($filterUsers);
             $usersSkipped = $matched->reject($filterUsers);
 
-            $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $userKeys) {
-                $s = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
+            $statusCounts = $matched->reduce(function ($carry, $u) use ($getStatus) {
+                $s = $getStatus($u) ?? 'Unknown';
                 $carry[$s] = ($carry[$s] ?? 0) + 1;
                 return $carry;
             }, []);
@@ -171,7 +267,7 @@ class EmployeeController extends Controller
             $emailsFailed = [];
 
             foreach ($usersToEmail as $u) {
-                $status = $statusMap[$userKeys[$u->id]] ?? 'Unknown';
+                $status = $getStatus($u) ?? 'Unknown';
 
                 try {
                     Mail::to('deepak.quantumitinnovation@gmail.com')->queue(new StatusNotification([
@@ -207,25 +303,31 @@ class EmployeeController extends Controller
 
             return response()->json([
                 'message' => 'User search completed.',
-                'found_users_with_emails' => $matched->map(fn($u) => [
-                    'id' => $u->id,
-                    'name' => "{$u->name} {$u->lastname}",
-                    'email' => $u->email,
-                    'status' => $statusMap[$userKeys[$u->id]] ?? null
-                ])->values(),
+                'found_users_with_emails' => $matched->map(function ($u) use ($getStatus) {
+                    return [
+                        'id' => $u->id,
+                        'name' => "{$u->name} {$u->lastname}",
+                        'email' => $u->email,
+                        'status' => $getStatus($u)
+                    ];
+                })->values(),
                 'unmatched_names' => $unmatched,
-                'users_to_email' => $usersToEmail->map(fn($u) => [
-                    'id' => $u->id,
-                    'name' => "{$u->name} {$u->lastname}",
-                    'email' => $u->email,
-                    'status' => $statusMap[$userKeys[$u->id]] ?? null
-                ])->values(),
-                'users_skipped' => $usersSkipped->map(fn($u) => [
-                    'id' => $u->id,
-                    'name' => "{$u->name} {$u->lastname}",
-                    'email' => $u->email,
-                    'status' => $statusMap[$userKeys[$u->id]] ?? null
-                ])->values(),
+                'users_to_email' => $usersToEmail->map(function ($u) use ($getStatus) {
+                    return [
+                        'id' => $u->id,
+                        'name' => "{$u->name} {$u->lastname}",
+                        'email' => $u->email,
+                        'status' => $getStatus($u)
+                    ];
+                })->values(),
+                'users_skipped' => $usersSkipped->map(function ($u) use ($getStatus) {
+                    return [
+                        'id' => $u->id,
+                        'name' => "{$u->name} {$u->lastname}",
+                        'email' => $u->email,
+                        'status' => $getStatus($u)
+                    ];
+                })->values(),
                 'emails_sent' => $emailsSent,
                 'emails_failed' => $emailsFailed,
                 'email_statistics' => [
@@ -242,7 +344,6 @@ class EmployeeController extends Controller
             return response()->json(['error' => 'Server error.'], 500);
         }
     }
-
 
 
 
