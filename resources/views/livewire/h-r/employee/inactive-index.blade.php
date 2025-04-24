@@ -16,8 +16,8 @@
         <div class="col-3">
             <div class="input-group mb-2">
                 <div class="input-group-text"><i class="feather feather-search"></i></div>
-                <input type="text" wire:model="search" placeholder="Search by Employee Name"
-                    id="user" class="form-control" autocomplete="off">
+                <input type="text" wire:model="search" placeholder="Search by Employee Name" id="user"
+                    class="form-control" autocomplete="off">
             </div>
         </div>
     </div>
@@ -39,6 +39,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Id</th>
+                                                <th>Emp Number</th>
                                                 <th>Emp Status</th>
                                                 <th>Emp Name</th>
                                                 <th>Emp Email</th>
@@ -51,25 +52,29 @@
                                             @foreach ($employees as $employee)
                                                 <tr class="odd">
                                                     <td>{{ $loop->iteration }}</td>
-                                                    @if($employee->employee_status==1)
+                                                    <td>{{ $employee->secondary_number }}</td>
+                                                    @if ($employee->employee_status == 1)
                                                         <td>Active</td>
-                                                     @else
+                                                    @else
                                                         <td>Inactive</td>
                                                     @endif
                                                     <td>{{ $employee->name }} {{ $employee->lastname }}</td>
                                                     <td>{{ $employee->email }}</td>
-                                                    <td>{{ $employee->department ? $employee->department->name : '' }}</td>
+                                                    <td>{{ $employee->department ? $employee->department->name : '' }}
+                                                    </td>
                                                     <td>{{ $employee->phone }}</td>
                                                     <td>
                                                         <a href="{{ route('employee_detail', ['id' => $employee->id, 'start_date' => 0, 'end_date' => 0]) }}"
-                                                            class="btn btn-info btn-sm"><i class="feather feather-eye"></i>
+                                                            class="btn btn-info btn-sm"><i
+                                                                class="feather feather-eye"></i>
                                                             </class=></a>
                                                         <a href="{{ route('employee.edit', ['employee' => $employee]) }}"
                                                             class="btn btn-warning btn-sm"><i
                                                                 class="feather feather-edit"></i></a>
                                                         <a href="javascript:void(0)"
-                                                            class="btn btn-danger btn-sm delete-btn" data-bs-toggle="modal"
-                                                            data-bs-target="#deleteuser" data-delete-link="{{ route('employee.destroy',['employee'=>$employee]) }}"><i
+                                                            class="btn btn-danger btn-sm delete-btn"
+                                                            data-bs-toggle="modal" data-bs-target="#deleteuser"
+                                                            data-delete-link="{{ route('employee.destroy', ['employee' => $employee]) }}"><i
                                                                 class="feather feather-trash"></i></a>
                                                     </td>
                                                 </tr>
@@ -86,4 +91,4 @@
                 </div>
             </div>
         </div>
-</div>
+    </div>
