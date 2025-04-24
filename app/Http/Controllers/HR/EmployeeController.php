@@ -55,7 +55,10 @@ class EmployeeController extends Controller
             $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
                 ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
 
-            $users = User::select('id', 'name', 'lastname', 'email')->get();
+            $users = User::where('employee_status', 1)
+                ->select('id', 'name', 'lastname', 'email')
+                ->get();
+
 
             $userKeys = $users->mapWithKeys(function ($u) use ($normalize, $buildKey, $removePrefix) {
                 $standard = $normalize($u->name) . $normalize($u->lastname);
