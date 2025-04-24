@@ -117,7 +117,7 @@ class EmployeeController extends Controller
             foreach ($usersToEmail as $u) {
                 $status = $statusMap[$getStatus($u)] ?? 'Unknown';
                 try {
-                    Mail::to('deepaks.quantumitinnovation@gmail.com')->queue(new StatusNotification([
+                    Mail::to($u->email)->queue(new StatusNotification([
                         'name' => "{$u->name} {$u->lastname}",
                         'status' => $status,
                     ]));
