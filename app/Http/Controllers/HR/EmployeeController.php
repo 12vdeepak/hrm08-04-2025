@@ -74,7 +74,7 @@ class EmployeeController extends Controller
             $matchedKeys = $matched->map($getMatchingKey)->filter()->values()->toArray();
             $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
 
-            $excluded = ['available', 'in a call'];
+            $excluded = ['available', 'in a call', 'busy', 'presenting'];
 
             // Get all users who have leaves approved for today using the correct field names
             $today = Carbon::today();
