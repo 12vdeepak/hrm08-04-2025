@@ -39,7 +39,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Id</th>
-                                                <th>Emp Number</th>
+                                               
                                                 <th>Emp Status</th>
                                                 <th>Emp Name</th>
                                                 <th>Emp Email</th>
@@ -51,8 +51,8 @@
                                         <tbody>
                                             @foreach ($employees as $employee)
                                                 <tr class="odd">
-                                                    <td>{{ $loop->iteration }}</td>
-                                                    <td>{{ $employee->secondary_number ?? 'N/A' }}</td>
+                                                    <td>{{ $employee->id }}</td>
+                                                   
 
                                                     @if ($employee->employee_status == 1)
                                                         <td>Active</td>

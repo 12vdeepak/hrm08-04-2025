@@ -116,7 +116,7 @@
                         <table class="table  table-vcenter text-nowrap table-bordered border-bottom" id="hr-attendance">
                             <thead>
                                 <tr>
-                                    <th class="border-bottom-0">Emp Number</th>
+                                    <th class="border-bottom-0">S no. </th>
                                     <th class="border-bottom-0">Employee Name</th>
                                     @for ($i = 1; $i <= $days; $i++)
                                         <th class="border-bottom-0 w-5">{{ $i }}</th>
@@ -131,7 +131,7 @@
                                     {{-- {{dd($attendance_data)}} --}}
                                     <tr>
                                         <td>
-                                            {{ $data['detail']->secondary_number ?? 'N/A' }}
+                                            {{ $data['detail']->id }}
                                         </td>
                                         <td>
                                             <div class="d-flex">

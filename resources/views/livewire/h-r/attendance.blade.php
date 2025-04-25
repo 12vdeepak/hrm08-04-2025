@@ -44,7 +44,7 @@
                                         aria-describedby="hr-table_info">
                                         <thead>
                                             <tr>
-                                                <th>Emp Number</th>
+                                                <th>S no.</th>
                                                 <th>Emp Name</th>
                                                 <th>First Check In</th>
                                                 <th>Check In Location</th>
@@ -62,7 +62,7 @@
                                             @if ($employees->count() > 0)
                                                 @foreach ($employees as $employee)
                                                     <tr>
-                                                        <td>{{ $employee->secondary_number ?? 'N/A' }}</td>
+                                                        <td>{{ $employee->id }}</td>
                                                         <td>{{ $employee->name }}</td>
                                                         <td>{{ $employee->check_in_time }}</td>
                                                         <td>{{ $employee->check_in_location }}</td>
