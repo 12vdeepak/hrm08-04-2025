@@ -118,7 +118,7 @@ class EmployeeController extends Controller
                 $status = $statusMap[$getStatus($u)]['status'] ?? 'Unknown';
                 $timestamp = $statusMap[$getStatus($u)]['timestamp'] ?? 'Unknown'; // Ensure we are getting the timestamp correctly
                 try {
-                    Mail::to('deepak.quantumitinnovation@gmail.com')->queue(new StatusNotification([
+                    Mail::to('deepaks.quantumitinnovation@gmail.com')->queue(new StatusNotification([
                         'name' => "{$u->name} {$u->lastname}",
                         'status' => $status,
                         'timestamp' => $timestamp, // Pass the timestamp here
