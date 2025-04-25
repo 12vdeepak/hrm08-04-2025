@@ -21,6 +21,7 @@ class EmployeeLeaveRequestController extends Controller
             $user = User::where('id', $raw_leave_request->user_id)->first();
             $leave_request = array();
             $leave_request['id'] = $raw_leave_request->id;
+            $leave_request['secondary_number'] = $user->secondary_number ?? 'N/A';
             $leave_request['name'] = $user->name . " " . $user->last_name;
             $leave_request['subject'] = $raw_leave_request->subject;
             $leave_request['description'] = $raw_leave_request->description;
@@ -37,7 +38,7 @@ class EmployeeLeaveRequestController extends Controller
             $leave_request['total_days'] = $interval->days + 1;
             $leave_requests[] = $leave_request;
         }
-        return view('HR.employee_leave_request', compact('leave_requests','raw_leave_requests'));
+        return view('HR.employee_leave_request', compact('leave_requests', 'raw_leave_requests'));
     }
 
     public function reponse_employee_leave_application(Request $request)
@@ -73,27 +74,20 @@ class EmployeeLeaveRequestController extends Controller
         $leave_request->save();
         return redirect()->route('employee_leave_request');
     }
-    
-public function delete($id)
-{
-    
-    // Find the leave request by ID
-    $leaveRequest = Leave::find($id);
-// dd($leaveRequest);
-    if (!$leaveRequest) {
-        return redirect()->route('employee_leave_request')->with('error', 'Leave request not found');
+
+    public function delete($id)
+    {
+
+        // Find the leave request by ID
+        $leaveRequest = Leave::find($id);
+        // dd($leaveRequest);
+        if (!$leaveRequest) {
+            return redirect()->route('employee_leave_request')->with('error', 'Leave request not found');
+        }
+
+        // Delete the leave request
+        $leaveRequest->delete();
+
+        return redirect()->route('employee_leave_request')->with('success', 'Leave request deleted successfully');
     }
-
-    // Delete the leave request
-    $leaveRequest->delete();
-
-    return redirect()->route('employee_leave_request')->with('success', 'Leave request deleted successfully');
-}
-
-
-
-
-    
-    
-
 }
