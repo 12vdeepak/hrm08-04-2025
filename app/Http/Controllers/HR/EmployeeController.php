@@ -252,6 +252,9 @@ class EmployeeController extends Controller
         $token_to_set_password = bin2hex($raw_token);
         $password = Str::random(10);
         $user = new User;
+        // Auto-increment secondary_number
+    $lastUser = User::orderBy('secondary_number', 'desc')->first();
+    $user->secondary_number = $lastUser ? $lastUser->secondary_number + 1 : 1;
         $user->name = $request->firstname;
         $user->lastname = $request->lastname;
         $user->email = $request->email;
