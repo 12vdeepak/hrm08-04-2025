@@ -25,7 +25,7 @@
                                             <thead>
                                                 <tr>
                                                     <th>S No.</th>
-                                                    <th>Employee Number</th>
+
 
                                                     <th>Employee Name</th>
                                                     <th>Leave Type</th>
@@ -40,8 +40,8 @@
                                             <tbody>
                                                 @foreach ($leave_requests as $leave_request)
                                                     <tr>
-                                                        <td>{{ $loop->iteration }}</td>
-                                                        <td>{{ $leave_request['secondary_number'] }}</td>
+                                                        <td>{{ $leave_request->id }}</td>
+
 
                                                         <td>{{ $leave_request['name'] }}</td>
                                                         <td>{{ $leave_request['type'] }}</td>
