@@ -25,6 +25,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>S No.</th>
+                                                    <th>Employee Number</th>
+
                                                     <th>Employee Name</th>
                                                     <th>Leave Type</th>
                                                     <th>Status</th>
@@ -39,6 +41,8 @@
                                                 @foreach ($leave_requests as $leave_request)
                                                     <tr>
                                                         <td>{{ $loop->iteration }}</td>
+                                                        <td>{{ $leave_request->secondary_number ?? 'N/A' }}</td>
+
                                                         <td>{{ $leave_request['name'] }}</td>
                                                         <td>{{ $leave_request['type'] }}</td>
                                                         <td>
@@ -54,12 +58,14 @@
                                                             <button class="btn btn-primary" data-bs-toggle="modal"
                                                                 data-bs-target="#view{{ $loop->iteration }}">View</button>
                                                         </td>
-                                                         <td>
-                                                             <form method="post" action="{{ route('delete-leave-request', ['id' => $leave_request['id']]) }}">
-                                                                    @csrf
-                                                                    @method('delete') 
-                                                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                                                </form>
+                                                        <td>
+                                                            <form method="post"
+                                                                action="{{ route('delete-leave-request', ['id' => $leave_request['id']]) }}">
+                                                                @csrf
+                                                                @method('delete')
+                                                                <button type="submit"
+                                                                    class="btn btn-danger">Delete</button>
+                                                            </form>
 
                                                         </td>
                                                     </tr>
@@ -118,10 +124,12 @@
                                                                                 readonly
                                                                                 value={{ $leave_request['status'] }}></input>
                                                                         </div>
-                                                                       <div class="mb-3">
-    <label>Title</label>
-    <input type="text" class="form-control" readonly value="{{ $leave_request['subject'] }}"></input>
-</div>
+                                                                        <div class="mb-3">
+                                                                            <label>Title</label>
+                                                                            <input type="text" class="form-control"
+                                                                                readonly
+                                                                                value="{{ $leave_request['subject'] }}"></input>
+                                                                        </div>
                                                                         <div class="mb-3">
                                                                             <label>Description</label>
                                                                             <textarea class="form-control" readonly required>{{ $leave_request['description'] }}</textarea>
@@ -161,31 +169,31 @@
                                                 @endforeach
                                             </tbody>
                                         </table>
-                                         <div class="text-center">
-                                    <ul class="pagination">
-                                        {{ $raw_leave_requests->links('vendor.pagination.bootstrap-5') }}
-                                    </ul>
-                                  </div>
+                                        <div class="text-center">
+                                            <ul class="pagination">
+                                                {{ $raw_leave_requests->links('vendor.pagination.bootstrap-5') }}
+                                            </ul>
+                                        </div>
                                     @else
                                         <h4>No Leave Request Made Yet</h4>
                                     @endif
                                 </div>
-                                
-                                
-                            {{-- </div>
+
+
+                                {{-- </div>
                             <div class="row">
                                 {{ $leave_requests->links() }}
                             </div> --}}
+                            </div>
                         </div>
+
                     </div>
-                   
                 </div>
             </div>
         </div>
-    </div>
 
-@endsection
+    @endsection
 
 
-@section('scripts')
-@endsection
+    @section('scripts')
+    @endsection
