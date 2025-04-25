@@ -14,9 +14,7 @@
                                     <option value="0" label="All">All</option>
                                     @foreach ($employees as $employee)
                                         <option value="{{ $employee->id }}"
-                                            @if ($selectedEmployee) 
-                                                {{ $selectedEmployee->id == $employee->id ? 'selected' : '' }} 
-                                            @endif>
+                                            @if ($selectedEmployee) {{ $selectedEmployee->id == $employee->id ? 'selected' : '' }} @endif>
                                             {{ $employee->name . ' ' . $employee->lastname }}
                                         </option>
                                     @endforeach
@@ -81,14 +79,17 @@
                         <div class="col-md-6 col-lg-3 d-flex justify-content-center align-items-center">
                             <div class="form-group">
                                 @php
-                                    if($selectedEmployeeId == null)
-                                        $id=0;
-                                    else
-                                        $id=$selectedEmployeeId;
-                                    
+                                    if ($selectedEmployeeId == null) {
+                                        $id = 0;
+                                    } else {
+                                        $id = $selectedEmployeeId;
+                                    }
+
                                 @endphp
-                                <a href="{{route('attendance_report_pdf',['user_id' => $id,'month' => $month, 'year' => $year]) }}" class="btn btn-info mb-1">Download Attendance Report</a>
-                                <a href="{{route('checkins_report_pdf',['user_id' => $id,'month' => $month, 'year' => $year]) }}" class="btn btn-info mt-1">Download Checkins Report</a>
+                                <a href="{{ route('attendance_report_pdf', ['user_id' => $id, 'month' => $month, 'year' => $year]) }}"
+                                    class="btn btn-info mb-1">Download Attendance Report</a>
+                                <a href="{{ route('checkins_report_pdf', ['user_id' => $id, 'month' => $month, 'year' => $year]) }}"
+                                    class="btn btn-info mt-1">Download Checkins Report</a>
                             </div>
                         </div>
                     </div>
@@ -115,6 +116,7 @@
                         <table class="table  table-vcenter text-nowrap table-bordered border-bottom" id="hr-attendance">
                             <thead>
                                 <tr>
+                                    <th class="border-bottom-0">Emp Number</th>
                                     <th class="border-bottom-0">Employee Name</th>
                                     @for ($i = 1; $i <= $days; $i++)
                                         <th class="border-bottom-0 w-5">{{ $i }}</th>
@@ -124,12 +126,13 @@
                             </thead>
                             <tbody>
                                 @foreach ($attendance_data->filter(function ($data) {
-    return $data['detail']->employee_status == 1;
-}) as $data)
-
-
-                                {{-- {{dd($attendance_data)}} --}}
+        return $data['detail']->employee_status == 1;
+    }) as $data)
+                                    {{-- {{dd($attendance_data)}} --}}
                                     <tr>
+                                        <td>
+                                            {{ $data['detail']->secondary_number ?? 'N/A' }}
+                                        </td>
                                         <td>
                                             <div class="d-flex">
                                                 <span class="avatar avatar brround me-3"
@@ -150,36 +153,36 @@
                                                     <div class="hr-listd">
                                                         <a href="javascript:void(0);" class="hr-listmodal"></a>
                                                         <span class="text-danger">A</span>
-                                                @elseif($record['status'] == 0.5)
-                                                    <div class="hr-listd">
-                                                        <a href="javascript:void(0);"
-                                                            wire:click="presentModalInit({{ $data['detail']->id }}, {{ $loop->iteration }})"
-                                                            class="hr-listmodal"></a>
-                                                        <span class="badge badge-pink-light">HD</span>
-                                                    </div>
-                                                @elseif($record['status'] == 1)
-                                                    <div class="hr-listd">
-                                                        <a href="javascript:void(0);"
-                                                            wire:click="presentModalInit({{ $data['detail']->id }}, {{ $loop->iteration }})"
-                                                            class="hr-listmodal"></a>
-                                                        <span class="text-success ">P</span>
-                                                    </div>
-                                                @elseif($record['status'] == 2)
-                                                    <div class="hr-listd">
-                                                        <a href="javascript:void(0);" class="hr-listmodal"></a>
-                                                        <span class="text-info">O</span>
-                                                    </div>
-                                                @elseif($record['status'] == 3)
-                                                    <div class="hr-listd">
-                                                        <a href="javascript:void(0);" class="hr-listmodal"></a>
-                                                        <span class="text-warning">W</span>
-                                                    </div>
-                                                @elseif($record['status'] == 4)
-                                                    <div class="hr-listd">
-                                                        <a href="javascript:void(0);" class="hr-listmodal"></a>
-                                                        <span class="text-warning">H</span>
-                                                    </div>
-                                                {{-- @elseif($record['status'] == 5)
+                                                    @elseif($record['status'] == 0.5)
+                                                        <div class="hr-listd">
+                                                            <a href="javascript:void(0);"
+                                                                wire:click="presentModalInit({{ $data['detail']->id }}, {{ $loop->iteration }})"
+                                                                class="hr-listmodal"></a>
+                                                            <span class="badge badge-pink-light">HD</span>
+                                                        </div>
+                                                    @elseif($record['status'] == 1)
+                                                        <div class="hr-listd">
+                                                            <a href="javascript:void(0);"
+                                                                wire:click="presentModalInit({{ $data['detail']->id }}, {{ $loop->iteration }})"
+                                                                class="hr-listmodal"></a>
+                                                            <span class="text-success ">P</span>
+                                                        </div>
+                                                    @elseif($record['status'] == 2)
+                                                        <div class="hr-listd">
+                                                            <a href="javascript:void(0);" class="hr-listmodal"></a>
+                                                            <span class="text-info">O</span>
+                                                        </div>
+                                                    @elseif($record['status'] == 3)
+                                                        <div class="hr-listd">
+                                                            <a href="javascript:void(0);" class="hr-listmodal"></a>
+                                                            <span class="text-warning">W</span>
+                                                        </div>
+                                                    @elseif($record['status'] == 4)
+                                                        <div class="hr-listd">
+                                                            <a href="javascript:void(0);" class="hr-listmodal"></a>
+                                                            <span class="text-warning">H</span>
+                                                        </div>
+                                                        {{-- @elseif($record['status'] == 5)
                                                     <div class="hr-listd">
                                                         <a href="javascript:void(0);" class="hr-listmodal"></a>
                                                         <span class="text-warning">AL</span>
