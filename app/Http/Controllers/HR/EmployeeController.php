@@ -29,175 +29,175 @@ class EmployeeController extends Controller
 
 
     public function processStatusData(Request $request)
-{
-    try {
-        Log::info('Raw Request:', $request->all());
+    {
+        try {
+            Log::info('Raw Request:', $request->all());
 
-        $data = $request->input('data');
-        if (is_string($data)) {
-            $data = json_decode($data, true);
-        }
+            $data = $request->input('data');
+            if (is_string($data)) {
+                $data = json_decode($data, true);
+            }
 
-        if (!is_array($data)) {
-            Log::error('Invalid "data" format', ['received' => $data]);
-            return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
-        }
+            if (!is_array($data)) {
+                Log::error('Invalid "data" format', ['received' => $data]);
+                return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
+            }
 
-        $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
-        $removePrefix = fn($name) => preg_replace('/^([0-9]+|[A-Z]+(\s+[0-9]+)?|[A-Z]\s*[0-9]*)\.\s*/i', '', $name ?? '');
+            $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
+            $removePrefix = fn($name) => preg_replace('/^([0-9]+|[A-Z]+(\s+[0-9]+)?|[A-Z]\s*[0-9]*)\.\s*/i', '', $name ?? '');
 
-        $buildKey = function ($name) use ($normalize, $removePrefix) {
-            $clean = preg_replace('/[^a-z\s]/i', '', $removePrefix($name ?? ''));
-            $parts = array_filter(explode(' ', $clean));
-            return implode('', array_map($normalize, $parts));
-        };
+            $buildKey = function ($name) use ($normalize, $removePrefix) {
+                $clean = preg_replace('/[^a-z\s]/i', '', $removePrefix($name ?? ''));
+                $parts = array_filter(explode(' ', $clean));
+                return implode('', array_map($normalize, $parts));
+            };
 
-        // Store status and timestamp together under the same key
-        $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
-            ->mapWithKeys(function ($i) use ($buildKey) {
-                $key = $buildKey($i['name']);
-                return [
-                    $key => [
-                        'status' => $i['status'] ?? null,
-                        'timestamp' => $i['timestamp'] ?? null,
-                    ]
-                ];
+            // Store status and timestamp together under the same key
+            $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
+                ->mapWithKeys(function ($i) use ($buildKey) {
+                    $key = $buildKey($i['name']);
+                    return [
+                        $key => [
+                            'status' => $i['status'] ?? null,
+                            'timestamp' => $i['timestamp'] ?? null,
+                        ]
+                    ];
+                });
+
+            $users = User::where('employee_status', 1)
+                ->select('id', 'name', 'lastname', 'email')
+                ->get();
+
+            $userKeys = $users->mapWithKeys(function ($u) use ($normalize, $buildKey, $removePrefix) {
+                $standard = $normalize($u->name) . $normalize($u->lastname);
+                $cleanName = $removePrefix($u->name);
+                $cleaned = $normalize($cleanName) . $normalize($u->lastname);
+                $composite = $buildKey($u->name . ' ' . $u->lastname);
+                $extra = $normalize($cleanName);
+                return [$u->id => [$standard, $cleaned, $composite, $extra]];
             });
 
-        $users = User::where('employee_status', 1)
-            ->select('id', 'name', 'lastname', 'email')
-            ->get();
+            $matched = $users->filter(fn($u) => collect($userKeys[$u->id])->contains(fn($key) => !empty($key) && $statusMap->has($key)));
 
-        $userKeys = $users->mapWithKeys(function ($u) use ($normalize, $buildKey, $removePrefix) {
-            $standard = $normalize($u->name) . $normalize($u->lastname);
-            $cleanName = $removePrefix($u->name);
-            $cleaned = $normalize($cleanName) . $normalize($u->lastname);
-            $composite = $buildKey($u->name . ' ' . $u->lastname);
-            $extra = $normalize($cleanName);
-            return [$u->id => [$standard, $cleaned, $composite, $extra]];
-        });
+            $getMatchingKey = fn($u) => collect($userKeys[$u->id])->first(fn($key) => $statusMap->has($key));
+            $getStatus = $getMatchingKey;
 
-        $matched = $users->filter(fn($u) => collect($userKeys[$u->id])->contains(fn($key) => !empty($key) && $statusMap->has($key)));
+            $matchedKeys = $matched->map($getMatchingKey)->filter()->values()->toArray();
+            $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
 
-        $getMatchingKey = fn($u) => collect($userKeys[$u->id])->first(fn($key) => $statusMap->has($key));
-        $getStatus = $getMatchingKey;
+            $excluded = ['available', 'in a call', 'busy', 'presenting'];
 
-        $matchedKeys = $matched->map($getMatchingKey)->filter()->values()->toArray();
-        $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
+            $today = Carbon::today();
+            $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->pluck('user_id')
+                ->toArray();
 
-        $excluded = ['available', 'in a call', 'busy', 'presenting'];
+            Log::info('Users on approved leave today:', $onLeaveUserIds);
 
-        $today = Carbon::today();
-        $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
-            ->whereDate('start_date', '<=', $today)
-            ->whereDate('end_date', '>=', $today)
-            ->pluck('user_id')
-            ->toArray();
+            $filterUsers = function ($u) use ($statusMap, $getStatus, $excluded, $onLeaveUserIds) {
+                $status = $statusMap[$getStatus($u)]['status'] ?? '';
+                if (in_array(strtolower($status), $excluded)) return false;
+                if (in_array($u->id, $onLeaveUserIds)) return false;
+                return true;
+            };
 
-        Log::info('Users on approved leave today:', $onLeaveUserIds);
+            $usersToEmail = $matched->filter($filterUsers);
+            $usersSkipped = $matched->reject($filterUsers);
 
-        $filterUsers = function ($u) use ($statusMap, $getStatus, $excluded, $onLeaveUserIds) {
-            $status = $statusMap[$getStatus($u)]['status'] ?? '';
-            if (in_array(strtolower($status), $excluded)) return false;
-            if (in_array($u->id, $onLeaveUserIds)) return false;
-            return true;
-        };
+            $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $getStatus) {
+                $status = $statusMap[$getStatus($u)]['status'] ?? 'Unknown';
+                $carry[$status] = ($carry[$status] ?? 0) + 1;
+                return $carry;
+            }, []);
 
-        $usersToEmail = $matched->filter($filterUsers);
-        $usersSkipped = $matched->reject($filterUsers);
+            $emailsSent = [];
+            $emailsFailed = [];
 
-        $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $getStatus) {
-            $status = $statusMap[$getStatus($u)]['status'] ?? 'Unknown';
-            $carry[$status] = ($carry[$status] ?? 0) + 1;
-            return $carry;
-        }, []);
+            foreach ($usersToEmail as $u) {
+                $statusKey = $getStatus($u);
+                $info = $statusMap[$statusKey] ?? ['status' => 'Unknown', 'timestamp' => null];
+                $status = $info['status'];
+                $timestamp = $info['timestamp'];
 
-        $emailsSent = [];
-        $emailsFailed = [];
-
-        foreach ($usersToEmail as $u) {
-            $statusKey = $getStatus($u);
-            $info = $statusMap[$statusKey] ?? ['status' => 'Unknown', 'timestamp' => null];
-            $status = $info['status'];
-            $timestamp = $info['timestamp'];
-
-            try {
-                Mail::to('deepaks.quantumitinnovation@gmail.com')->queue(new StatusNotification([
-                    'name' => "{$u->name} {$u->lastname}",
-                    'status' => $status,
-                    'timestamp' => $timestamp,
-                ]));
-                usleep(200000); // 200ms delay
-                $emailsSent[] = [
-                    'id' => $u->id,
-                    'name' => "{$u->name} {$u->lastname}",
-                    'email' => $u->email,
-                    'status' => $status,
-                    'timestamp' => $timestamp
-                ];
-            } catch (\Exception $e) {
-                $emailsFailed[] = [
-                    'id' => $u->id,
-                    'name' => "{$u->name} {$u->lastname}",
-                    'email' => $u->email,
-                    'status' => $status,
-                    'timestamp' => $timestamp,
-                    'error' => $e->getMessage()
-                ];
-                Log::error("Email failed for user: {$u->email}", ['error' => $e->getMessage()]);
+                try {
+                    Mail::to('deepak.quantumitinnovation@gmail.com')->queue(new StatusNotification([
+                        'name' => "{$u->name} {$u->lastname}",
+                        'status' => $status,
+                        'timestamp' => $timestamp,
+                    ]));
+                    usleep(200000); // 200ms delay
+                    $emailsSent[] = [
+                        'id' => $u->id,
+                        'name' => "{$u->name} {$u->lastname}",
+                        'email' => $u->email,
+                        'status' => $status,
+                        'timestamp' => $timestamp
+                    ];
+                } catch (\Exception $e) {
+                    $emailsFailed[] = [
+                        'id' => $u->id,
+                        'name' => "{$u->name} {$u->lastname}",
+                        'email' => $u->email,
+                        'status' => $status,
+                        'timestamp' => $timestamp,
+                        'error' => $e->getMessage()
+                    ];
+                    Log::error("Email failed for user: {$u->email}", ['error' => $e->getMessage()]);
+                }
             }
+
+            Log::info('Status Counts:', $statusCounts);
+            Log::info('Matched Count', ['count' => $matched->count()]);
+            Log::info('To Email Count', ['count' => $usersToEmail->count()]);
+            Log::info('Skipped Count', ['count' => $usersSkipped->count()]);
+            Log::info('Emails Sent To:', array_column($emailsSent, 'email'));
+            Log::warning('Emails Failed To:', array_column($emailsFailed, 'email'));
+            Log::warning('Unmatched Keys:', $unmatched);
+            Log::info('Skipped Users:', $usersSkipped->toArray());
+
+            return response()->json([
+                'message' => 'User search completed.',
+                'found_users_with_emails' => $matched->map(fn($u) => [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => $u->email,
+                    'status' => $statusMap[$getStatus($u)]['status'] ?? null,
+                    'timestamp' => $statusMap[$getStatus($u)]['timestamp'] ?? null,
+                ])->values(),
+                'unmatched_names' => $unmatched,
+                'users_to_email' => $usersToEmail->map(fn($u) => [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => $u->email,
+                    'status' => $statusMap[$getStatus($u)]['status'] ?? null,
+                    'timestamp' => $statusMap[$getStatus($u)]['timestamp'] ?? null,
+                ])->values(),
+                'users_skipped' => $usersSkipped->map(fn($u) => [
+                    'id' => $u->id,
+                    'name' => "{$u->name} {$u->lastname}",
+                    'email' => $u->email,
+                    'status' => $statusMap[$getStatus($u)]['status'] ?? null,
+                    'timestamp' => $statusMap[$getStatus($u)]['timestamp'] ?? null,
+                ])->values(),
+                'emails_sent' => $emailsSent,
+                'emails_failed' => $emailsFailed,
+                'email_statistics' => [
+                    'total_matched' => $matched->count(),
+                    'total_to_email' => $usersToEmail->count(),
+                    'total_skipped' => $usersSkipped->count(),
+                    'total_sent' => count($emailsSent),
+                    'total_failed' => count($emailsFailed),
+                    'status_distribution' => $statusCounts,
+                    'users_on_approved_leave' => count($onLeaveUserIds)
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Unhandled error in processStatusData', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Server error.'], 500);
         }
-
-        Log::info('Status Counts:', $statusCounts);
-        Log::info('Matched Count', ['count' => $matched->count()]);
-        Log::info('To Email Count', ['count' => $usersToEmail->count()]);
-        Log::info('Skipped Count', ['count' => $usersSkipped->count()]);
-        Log::info('Emails Sent To:', array_column($emailsSent, 'email'));
-        Log::warning('Emails Failed To:', array_column($emailsFailed, 'email'));
-        Log::warning('Unmatched Keys:', $unmatched);
-        Log::info('Skipped Users:', $usersSkipped->toArray());
-
-        return response()->json([
-            'message' => 'User search completed.',
-            'found_users_with_emails' => $matched->map(fn($u) => [
-                'id' => $u->id,
-                'name' => "{$u->name} {$u->lastname}",
-                'email' => $u->email,
-                'status' => $statusMap[$getStatus($u)]['status'] ?? null,
-                'timestamp' => $statusMap[$getStatus($u)]['timestamp'] ?? null,
-            ])->values(),
-            'unmatched_names' => $unmatched,
-            'users_to_email' => $usersToEmail->map(fn($u) => [
-                'id' => $u->id,
-                'name' => "{$u->name} {$u->lastname}",
-                'email' => $u->email,
-                'status' => $statusMap[$getStatus($u)]['status'] ?? null,
-                'timestamp' => $statusMap[$getStatus($u)]['timestamp'] ?? null,
-            ])->values(),
-            'users_skipped' => $usersSkipped->map(fn($u) => [
-                'id' => $u->id,
-                'name' => "{$u->name} {$u->lastname}",
-                'email' => $u->email,
-                'status' => $statusMap[$getStatus($u)]['status'] ?? null,
-                'timestamp' => $statusMap[$getStatus($u)]['timestamp'] ?? null,
-            ])->values(),
-            'emails_sent' => $emailsSent,
-            'emails_failed' => $emailsFailed,
-            'email_statistics' => [
-                'total_matched' => $matched->count(),
-                'total_to_email' => $usersToEmail->count(),
-                'total_skipped' => $usersSkipped->count(),
-                'total_sent' => count($emailsSent),
-                'total_failed' => count($emailsFailed),
-                'status_distribution' => $statusCounts,
-                'users_on_approved_leave' => count($onLeaveUserIds)
-            ]
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Unhandled error in processStatusData', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-        return response()->json(['error' => 'Server error.'], 500);
     }
-}
 
 
 
