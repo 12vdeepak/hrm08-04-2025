@@ -32,34 +32,33 @@ class EmployeeController extends Controller
     {
         try {
             Log::info('Raw Request:', $request->all());
-
+    
             $data = $request->input('data');
             if (is_string($data)) {
                 $data = json_decode($data, true);
             }
-
+    
             if (!is_array($data)) {
                 Log::error('Invalid "data" format', ['received' => $data]);
                 return response()->json(['error' => 'Invalid or missing "data" field.'], 400);
             }
-
+    
             $normalize = fn($str) => strtolower(preg_replace('/[^a-z]/i', '', $str));
             $removePrefix = fn($name) => preg_replace('/^([0-9]+|[A-Z]+(\s+[0-9]+)?|[A-Z]\s*[0-9]*)\.\s*/i', '', $name ?? '');
-
+    
             $buildKey = function ($name) use ($normalize, $removePrefix) {
                 $clean = preg_replace('/[^a-z\s]/i', '', $removePrefix($name ?? ''));
                 $parts = array_filter(explode(' ', $clean));
                 return implode('', array_map($normalize, $parts));
             };
-
+    
             $statusMap = collect($data)->filter(fn($i) => isset($i['name']))
-                ->mapWithKeys(fn($i) => [$buildKey($i['name']) => $i['status'] ?? null]);
-
+                ->mapWithKeys(fn($i) => [$buildKey($i['name']) => ['status' => $i['status'] ?? null, 'timestamp' => $i['timestamp'] ?? null]]);
+    
             $users = User::where('employee_status', 1)
                 ->select('id', 'name', 'lastname', 'email')
                 ->get();
-
-
+    
             $userKeys = $users->mapWithKeys(function ($u) use ($normalize, $buildKey, $removePrefix) {
                 $standard = $normalize($u->name) . $normalize($u->lastname);
                 $cleanName = $removePrefix($u->name);
@@ -68,17 +67,17 @@ class EmployeeController extends Controller
                 $extra = $normalize($cleanName);
                 return [$u->id => [$standard, $cleaned, $composite, $extra]];
             });
-
+    
             $matched = $users->filter(fn($u) => collect($userKeys[$u->id])->contains(fn($key) => !empty($key) && $statusMap->has($key)));
-
+    
             $getStatus = fn($u) => collect($userKeys[$u->id])->first(fn($key) => $statusMap->has($key));
             $getMatchingKey = fn($u) => collect($userKeys[$u->id])->first(fn($key) => $statusMap->has($key));
-
+    
             $matchedKeys = $matched->map($getMatchingKey)->filter()->values()->toArray();
             $unmatched = array_values(array_diff($statusMap->keys()->toArray(), $matchedKeys));
-
+    
             $excluded = ['available', 'in a call', 'busy', 'presenting'];
-
+    
             // Get all users who have leaves approved for today using the correct field names
             $today = Carbon::today();
             $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
@@ -86,43 +85,43 @@ class EmployeeController extends Controller
                 ->whereDate('end_date', '>=', $today)
                 ->pluck('user_id')
                 ->toArray();
-
-
-
+    
             Log::info('Users on approved leave today:', $onLeaveUserIds);
-
+    
             $filterUsers = function ($u) use ($statusMap, $getStatus, $excluded, $onLeaveUserIds) {
                 // Skip if user has "Available" or "In a call" status
-                if (in_array(strtolower($statusMap[$getStatus($u)] ?? ''), $excluded)) {
+                if (in_array(strtolower($statusMap[$getStatus($u)]['status'] ?? ''), $excluded)) {
                     return false;
                 }
-
+    
                 // Skip if user has an approved leave for today
                 if (in_array($u->id, $onLeaveUserIds)) {
                     return false;
                 }
-
+    
                 return true;
             };
-
+    
             $usersToEmail = $matched->filter($filterUsers);
             $usersSkipped = $matched->reject($filterUsers);
-
+    
             $statusCounts = $matched->reduce(function ($carry, $u) use ($statusMap, $getStatus) {
-                $status = $statusMap[$getStatus($u)] ?? 'Unknown';
+                $status = $statusMap[$getStatus($u)]['status'] ?? 'Unknown';
                 $carry[$status] = ($carry[$status] ?? 0) + 1;
                 return $carry;
             }, []);
-
+    
             $emailsSent = [];
             $emailsFailed = [];
-
+    
             foreach ($usersToEmail as $u) {
-                $status = $statusMap[$getStatus($u)] ?? 'Unknown';
+                $status = $statusMap[$getStatus($u)]['status'] ?? 'Unknown';
+                $timestamp = $statusMap[$getStatus($u)]['timestamp'] ?? 'Unknown'; // Ensure we are getting the timestamp correctly
                 try {
-                    Mail::to($u->email)->queue(new StatusNotification([
+                    Mail::to('deepak.quantumitinnovation@gmail.com')->queue(new StatusNotification([
                         'name' => "{$u->name} {$u->lastname}",
                         'status' => $status,
+                        'timestamp' => $timestamp, // Pass the timestamp here
                     ]));
                     usleep(200000);
                     $emailsSent[] = ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $status];
@@ -131,7 +130,7 @@ class EmployeeController extends Controller
                     Log::error("Email failed for user: {$u->email}", ['error' => $e->getMessage()]);
                 }
             }
-
+    
             Log::info('Status Counts:', $statusCounts);
             Log::info('Matched Count', ['count' => $matched->count()]);
             Log::info('To Email Count', ['count' => $usersToEmail->count()]);
@@ -140,13 +139,13 @@ class EmployeeController extends Controller
             Log::warning('Emails Failed To:', array_column($emailsFailed, 'email'));
             Log::warning('Unmatched Keys:', $unmatched);
             Log::info('Skipped Users:', $usersSkipped->toArray());
-
+    
             return response()->json([
                 'message' => 'User search completed.',
-                'found_users_with_emails' => $matched->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$getStatus($u)]])->values(),
+                'found_users_with_emails' => $matched->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$getStatus($u)]['status']])->values(),
                 'unmatched_names' => $unmatched,
-                'users_to_email' => $usersToEmail->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$getStatus($u)]])->values(),
-                'users_skipped' => $usersSkipped->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$getStatus($u)]])->values(),
+                'users_to_email' => $usersToEmail->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$getStatus($u)]['status']])->values(),
+                'users_skipped' => $usersSkipped->map(fn($u) => ['id' => $u->id, 'name' => "{$u->name} {$u->lastname}", 'email' => $u->email, 'status' => $statusMap[$getStatus($u)]['status']])->values(),
                 'emails_sent' => $emailsSent,
                 'emails_failed' => $emailsFailed,
                 'email_statistics' => [
@@ -164,6 +163,7 @@ class EmployeeController extends Controller
             return response()->json(['error' => 'Server error.'], 500);
         }
     }
+    
 
 
 
