@@ -51,7 +51,7 @@
                                         <tbody>
                                             @foreach ($employees as $employee)
                                                 <tr class="odd">
-                                                    <td>{{ $loop->id }}</td>
+                                                    <td>{{ $employee->id }}</td>
                                                    
 
                                                     @if ($employee->employee_status == 1)
