@@ -40,7 +40,7 @@
                                             <tbody>
                                                 @foreach ($leave_requests as $leave_request)
                                                     <tr>
-                                                        <td>{{ $leave_request->['id'] }}</td>
+                                                        <td>{{ $leave_request['id'] }}</td>
 
 
                                                         <td>{{ $leave_request['name'] }}</td>
