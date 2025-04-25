@@ -266,7 +266,7 @@ class PDFController extends Controller
         if ($user_id!=0) {
             $user = User::find($user_id);
             $details=[
-                'secondary_number'=>$user->secondary_number,
+                'id'=>$user->id,
                 'name'=>$user->name,
                 'lastname'=>$user->lastname ?? " ",
                 'email'=>$user->email,
@@ -280,7 +280,7 @@ class PDFController extends Controller
             $employees = User::where('role_id', '!=', 1)->where('employee_status', 1)->get();
             foreach ($employees as $employee) {
                 $details = [
-                    'secondary_number' => $employee->secondary_number,
+                    'id' => $employee->id,
                     'name' => $employee->name,
                     'lastname' => $employee->lastname ?? null,
                     'email' => $employee->email,

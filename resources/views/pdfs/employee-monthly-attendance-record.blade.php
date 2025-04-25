@@ -25,7 +25,7 @@
     @foreach ($data['attendance_data'] as $data)
             <tr>
             <td>
-                        {{ $data['detail']['secondary_number'] }}
+                        {{ $data['detail']['id'] }}
 </td>
                     <td>
                         {{ $data['detail']['name'] . ' ' . $data['detail']['lastname']}}
