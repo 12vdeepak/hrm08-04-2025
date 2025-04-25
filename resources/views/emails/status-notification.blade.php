@@ -50,10 +50,8 @@
 
         <p>Your status is: <span class="status">{{ $userData['status'] }}</span></p>
 
-        @if (!empty($userData['timestamp']))
-            <p>Status last updated at:
-                <strong>{{ \Carbon\Carbon::parse($userData['timestamp'])->format('F j, Y, g:i A') }}</strong></p>
-        @endif
+        <!-- Display the timestamp -->
+        <p>Timestamp: <strong>{{ $userData['timestamp'] }}</strong></p>
 
         <p>If you believe this status update is incorrect, please contact the administrator.</p>
 
