@@ -41,8 +41,8 @@
                                         <thead>
                                             <tr>
                                                 <th>S.No.</th>
-                                               
-                                                <th>Emp. Name</th>
+
+
                                                 <th>Emp. Email</th>
                                                 <th>Department</th>
                                                 <th>Phone Number</th>
@@ -54,7 +54,7 @@
                                             @foreach ($paginatedEmployees as $employee)
                                                 <tr>
                                                     <td>{{ $employee->id }}</td>
-                                                    <td>{{ $employee->secondary_number }}</td>
+
                                                     <td>{{ $employee->name }} {{ $employee->lastname }}</td>
                                                     <td>{{ $employee->email }}</td>
                                                     <td>{{ $employee->department ? $employee->department->name : '' }}
