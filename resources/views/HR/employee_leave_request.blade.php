@@ -39,7 +39,8 @@
                                                 @foreach ($leave_requests as $leave_request)
                                                     <tr>
                                                         <td>{{ $loop->iteration }}</td>
-                                                        <td>{{ $leave_request['name'] }}</td>
+                                                        <td>{{ $leave_request['id'] }} - {{ $leave_request['name'] }}</td>
+
                                                         <td>{{ $leave_request['type'] }}</td>
                                                         <td>
                                                             <span
