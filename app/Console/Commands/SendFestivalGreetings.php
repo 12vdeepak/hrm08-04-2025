@@ -52,7 +52,13 @@ class SendFestivalGreetings extends Command
         // Send to testing email
         $testingEmail = 'deepak.quantumitinnovation@gmail.com';
 
+        $batchSize = 5;  // Number of emails to send in each batch
+        $delayBetweenBatches = 10; // Delay (in seconds) between batches of emails
+        $retryDelay = 10; // Delay (in seconds) between retries
+
         foreach ($holidays as $holiday) {
+            $counter = 0;
+
             foreach ($employees as $employee) {
                 $retries = 3;
                 $sent = false;
@@ -64,8 +70,8 @@ class SendFestivalGreetings extends Command
                             ->send(new FestivalGreeting(
                                 $holiday->name,
                                 $employee->name,
-                                \Carbon\Carbon::parse($holiday->start_date)->format('M j, Y'),
-                                \Carbon\Carbon::parse($holiday->end_date)->format('M j, Y')
+                                Carbon::parse($holiday->start_date)->format('M j, Y'),
+                                Carbon::parse($holiday->end_date)->format('M j, Y')
                             ));
 
                         // Log each email sent
@@ -74,8 +80,8 @@ class SendFestivalGreetings extends Command
                     } catch (TransportExceptionInterface $e) {
                         // Check if the error is due to rate limiting
                         if (strpos($e->getMessage(), '421 too many messages in this connection') !== false) {
-                            $this->info("Rate limit hit. Retrying in 10 seconds...");
-                            sleep(10);  // Retry after a delay
+                            $this->info("Rate limit hit. Retrying in {$retryDelay} seconds...");
+                            sleep($retryDelay);  // Retry after a delay
                             $retries--;
                         } else {
                             // Log the error and stop retrying for other errors
@@ -87,6 +93,13 @@ class SendFestivalGreetings extends Command
 
                 if (!$sent) {
                     $this->info("Failed to send greeting to {$employee->name} after retries.");
+                }
+
+                // Increase the counter and check if we reached the batch size
+                $counter++;
+                if ($counter % $batchSize === 0) {
+                    $this->info("Batch of {$batchSize} emails sent. Waiting for {$delayBetweenBatches} seconds...");
+                    sleep($delayBetweenBatches); // Wait before sending the next batch
                 }
 
                 // Optional: Add a small delay to avoid hitting the SMTP server too quickly
