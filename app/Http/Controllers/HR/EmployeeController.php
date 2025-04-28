@@ -233,6 +233,7 @@ class EmployeeController extends Controller
             'Source' => 'required',
             'Title' => 'required',
             'date' => 'required',
+            'date_of_birth' => 'required',
             'employee_status' => 'required',
             'Type' => 'required',
             'role' => 'required',
@@ -266,6 +267,7 @@ class EmployeeController extends Controller
         $user->title_id = $request->Title;
         $user->source_hire = $request->Source;
         $user->date_of_joining = $request->date;
+        $user->date_of_birth = $request->date_of_birth;
         $user->employee_status = $request->employee_status;
         $user->employee_type_id = $request->Type;
         $user->role_id = $request->role;
@@ -432,6 +434,7 @@ class EmployeeController extends Controller
             'Source' => 'required',
             'Title' => 'required',
             'date' => 'required',
+            'date_of_birth' => 'required',
             'employee_status' => 'required',
             'Type' => 'required',
             'role' => 'required',
@@ -457,6 +460,7 @@ class EmployeeController extends Controller
         $employee->reporting_to = $request->reporting_to;
         $employee->source_hire = $request->Source;
         $employee->date_of_joining = $request->date;
+        $employee->date_of_birth= $request->date_of_birth;
         $employee->employee_status = $request->employee_status;
         $employee->employee_type_id = $request->Type;
         $employee->role_id = $request->role;

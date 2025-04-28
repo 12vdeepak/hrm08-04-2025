@@ -325,6 +325,29 @@
                             </div>
                         </div>
 
+
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12 col-lg-2">
+                                    <label class="form-label mb-0 mt-2">Date Of Birth</label>
+                                </div>
+                                <div class="col-md-12 col-lg-8">
+                                    <input type="date"
+                                        class="form-control @error('date_of_birth') is-invalid @enderror fc-datepicker hasDatepicker"
+                                        placeholder="DD-MM-YYYY" id="dp1683195362870" name="date_of_birth" value="{{ old('date_of_birth') }}">
+                                    @error('date_of_birth')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+
+                        
+                        
+
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-md-12 col-lg-2">

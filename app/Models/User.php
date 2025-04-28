@@ -34,6 +34,7 @@ class User extends Authenticatable
         'reporting_to',
         'source_hire',
         'date_of_joining',
+        'date_of_birth',
         'employee_status',
         'password_set',
         'token_to_set_password',
