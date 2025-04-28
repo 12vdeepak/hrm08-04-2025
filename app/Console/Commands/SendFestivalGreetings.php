@@ -8,6 +8,7 @@ use App\Models\Holiday;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class SendFestivalGreetings extends Command
 {
@@ -53,17 +54,43 @@ class SendFestivalGreetings extends Command
 
         foreach ($holidays as $holiday) {
             foreach ($employees as $employee) {
-                // Send the email with festival greetings to the testing email
-                Mail::to($testingEmail)
-                    ->send(new FestivalGreeting(
-                        $holiday->name,
-                        $employee->name,
-                        \Carbon\Carbon::parse($holiday->start_date)->format('M j, Y'),
-                        \Carbon\Carbon::parse($holiday->end_date)->format('M j, Y')
-                    ));
+                $retries = 3;
+                $sent = false;
 
-                // Log each email sent
-                $this->info("Sent {$holiday->name} greeting to testing email: {$testingEmail}");
+                while ($retries > 0 && !$sent) {
+                    try {
+                        // Send the email with festival greetings to the testing email
+                        Mail::to($testingEmail)
+                            ->send(new FestivalGreeting(
+                                $holiday->name,
+                                $employee->name,
+                                \Carbon\Carbon::parse($holiday->start_date)->format('M j, Y'),
+                                \Carbon\Carbon::parse($holiday->end_date)->format('M j, Y')
+                            ));
+
+                        // Log each email sent
+                        $this->info("Sent {$holiday->name} greeting to testing email: {$testingEmail}");
+                        $sent = true;  // Email sent successfully
+                    } catch (TransportExceptionInterface $e) {
+                        // Check if the error is due to rate limiting
+                        if (strpos($e->getMessage(), '421 too many messages in this connection') !== false) {
+                            $this->info("Rate limit hit. Retrying in 10 seconds...");
+                            sleep(10);  // Retry after a delay
+                            $retries--;
+                        } else {
+                            // Log the error and stop retrying for other errors
+                            $this->info("Failed to send email: {$e->getMessage()}");
+                            $retries = 0;  // Stop retrying
+                        }
+                    }
+                }
+
+                if (!$sent) {
+                    $this->info("Failed to send greeting to {$employee->name} after retries.");
+                }
+
+                // Optional: Add a small delay to avoid hitting the SMTP server too quickly
+                sleep(1);  // Adjust the delay as necessary
             }
         }
 
