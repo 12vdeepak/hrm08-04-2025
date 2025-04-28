@@ -1,9 +1,9 @@
-{{-- resources/views/emails/festival_greeting.blade.php --}}
+{{-- resources/views/emails/festival_reminder.blade.php --}}
 <!DOCTYPE html>
 <html>
 
 <head>
-    <title>Festival Greetings</title>
+    <title>Festival Reminder</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,22 +20,31 @@
             text-align: center;
             padding-bottom: 20px;
         }
+
+        .important {
+            color: #d9534f;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <div class="header">
-            <h1>Happy {{ $festivalName }}!</h1>
+            <h1>{{ $festivalName }} Holiday Reminder</h1>
         </div>
 
         <p>Dear {{ $employeeName }},</p>
 
-        <p>Wishing you and your family a joyful {{ $festivalName }}. May this festival bring happiness and prosperity to
-            your life.</p>
+        <p>This is a friendly reminder that our office will be <span class="important">closed tomorrow</span> for
+            {{ $festivalName }} celebrations.</p>
 
-        <p>Please note our office will be closed from {{ $startDate }} to {{ $endDate }} for the celebrations.
-        </p>
+        <p>The holiday period will be from {{ $startDate }} to {{ $endDate }}.</p>
+
+        <p>Please ensure you complete any pending tasks before leaving today, and set appropriate out-of-office messages
+            if needed.</p>
+
+        <p>Wishing you a wonderful {{ $festivalName }} celebration with your family and loved ones!</p>
 
         <p>Best regards,<br>
             Quantum IT Innovation</p>
