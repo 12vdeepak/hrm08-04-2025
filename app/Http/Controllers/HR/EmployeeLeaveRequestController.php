@@ -21,6 +21,7 @@ class EmployeeLeaveRequestController extends Controller
             $user = User::where('id', $raw_leave_request->user_id)->first();
             $leave_request = array();
             $leave_request['id'] = $raw_leave_request->id;
+            $leave_request['user_id'] = $user ? $user->id : 'N/A';
             $leave_request['secondary_number'] = $user->secondary_number ?? 'N/A';
             $leave_request['name'] = $user->name . " " . $user->last_name;
             $leave_request['subject'] = $raw_leave_request->subject;
