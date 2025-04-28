@@ -145,7 +145,8 @@
                                         </div>
                                     </div>
                                     <div class="ms-1">
-                                        <div class="h5 fs-14 mb-1">{{ $employee->name . ' ' . $employee->last_name }}</div>
+                                        <div class="h5 fs-14 mb-1"> {{ $employee->id }} - {{ $employee->name }}
+                                            {{ $employee->last_name }}</div>
                                         <small
                                             class="text-muted">{{ $employee->department ? $employee->department->name : '' }}</small>
                                     </div>
