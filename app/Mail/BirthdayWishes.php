@@ -37,7 +37,7 @@ class BirthdayWishes extends Mailable
      */
     public function build()
     {
-        $companyName = config('app.name');
+        $companyName = 'Quantum It Innovation';
         
         return $this->subject("Happy Birthday, {$this->user->name}!")
             ->view('emails.birthday')
