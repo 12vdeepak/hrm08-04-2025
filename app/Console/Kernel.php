@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('send:login-reminder')->weekdays()->at('10:31');
         $schedule->command('send:daily-status-report')->weekdays()->at('11:00');
         $schedule->command('send:late-mark-reminder')->weekdays()->at('20:00');
+        $schedule->command('emails:send-birthday-wishes')->dailyAt('08:00');
        
     }
 
