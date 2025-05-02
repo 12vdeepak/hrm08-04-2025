@@ -40,7 +40,7 @@
                                                         {{ $employee->name . ' ' . $employee->last_name }}</option>
                                                 @else
                                                     <option value={{ $employee->id }}>
-                                                        ID: {{ $employee->id }} -
+                                                        {{ $employee->id }} -
                                                         {{ $employee->name . ' ' . $employee->last_name }}</option>
                                                 @endif
                                             @endforeach
