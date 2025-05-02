@@ -36,9 +36,11 @@
                                             @foreach ($employees as $employee)
                                                 @if ($employee->id == $id)
                                                     <option value={{ $employee->id }} selected>
+                                                        {{ $employee->id }} -
                                                         {{ $employee->name . ' ' . $employee->last_name }}</option>
                                                 @else
                                                     <option value={{ $employee->id }}>
+                                                        ID: {{ $employee->id }} -
                                                         {{ $employee->name . ' ' . $employee->last_name }}</option>
                                                 @endif
                                             @endforeach
@@ -76,7 +78,7 @@
                 @if (count($data) > 1)
                     @foreach ($data as $d)
                         <div class="row col-sm-12">
-                            <h4>Employee Name: {{ $d['name'] }}</h4>
+                            <h4>ID: {{ $d['id'] }} - Employee Name: {{ $d['name'] }}</h4>
                             <hr>
                         </div>
                         @if (count($d['time_trackers']) > 0)
@@ -107,7 +109,7 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                   
+
                                                             @foreach ($time_tracker as $time_tracker_info)
                                                                 <tr>
                                                                     <td>{{ $loop->iteration }}</td>
@@ -116,31 +118,50 @@
                                                                     <td>{{ $time_tracker_info->work_title }}</td>
                                                                     <td>{{ $time_tracker_info->work_time }}</td>
                                                                     @php
-                                                                        [$hours1, $minutes1] = explode(':', $total_time);
-                                        if (strpos($time_tracker_info->work_time, ":") !== false){                                
-                                    [$hours2, $minutes2] = explode(':', $time_tracker_info->work_time);
-                                               }
-                                               else{
-                                               [$hours2, $minutes2] = explode(':', $total_time);
-                                               }                         // Convert hours and minutes to integers
+                                                                        [$hours1, $minutes1] = explode(
+                                                                            ':',
+                                                                            $total_time,
+                                                                        );
+                                                                        if (
+                                                                            strpos(
+                                                                                $time_tracker_info->work_time,
+                                                                                ':',
+                                                                            ) !== false
+                                                                        ) {
+                                                                            [$hours2, $minutes2] = explode(
+                                                                                ':',
+                                                                                $time_tracker_info->work_time,
+                                                                            );
+                                                                        } else {
+                                                                            [$hours2, $minutes2] = explode(
+                                                                                ':',
+                                                                                $total_time,
+                                                                            );
+                                                                        } // Convert hours and minutes to integers
                                                                         $hours1 = (int) $hours1;
                                                                         $minutes1 = (int) $minutes1;
                                                                         $hours2 = (int) $hours2;
                                                                         $minutes2 = (int) $minutes2;
-                                                                        
+
                                                                         // Perform addition for hours and minutes separately
                                                                         $totalHours = $hours1 + $hours2;
                                                                         $totalMinutes = $minutes1 + $minutes2;
-                                                                        
+
                                                                         // Adjust total hours if minutes exceed 59
                                                                         if ($totalMinutes >= 60) {
-                                                                            $additionalHours = floor($totalMinutes / 60);
+                                                                            $additionalHours = floor(
+                                                                                $totalMinutes / 60,
+                                                                            );
                                                                             $totalHours += $additionalHours;
                                                                             $totalMinutes = $totalMinutes % 60;
                                                                         }
-                                                                        
+
                                                                         // Format the result as "HH:MM"
-                                                                        $total_time = sprintf('%02d:%02d', $totalHours, $totalMinutes);
+                                                                        $total_time = sprintf(
+                                                                            '%02d:%02d',
+                                                                            $totalHours,
+                                                                            $totalMinutes,
+                                                                        );
                                                                     @endphp
                                                                 </tr>
                                                             @endforeach
@@ -154,9 +175,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            
                             @endforeach
-                         
                         @else
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -174,7 +193,7 @@
                 @else
                     @if (count($data['time_trackers']) > 0)
                         <div class="row col-sm-12">
-                            <h4>Employee Name: {{ $name }}</h4>
+                            <h4>ID: {{ $id }} - Employee Name: {{ $name }}</h4>
                             <hr>
                         </div>
                         @foreach ($data['time_trackers'] as $time_tracker)
@@ -201,7 +220,7 @@
                                                             <th>Work Description</th>
                                                             <th>Time</th>
                                                             <th>Action</th>
-                                                                
+
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -214,38 +233,45 @@
                                                                 <td>{{ $time_tracker_info->work_time }}</td>
                                                                 @php
                                                                     [$hours1, $minutes1] = explode(':', $total_time);
-                                                                    [$hours2, $minutes2] = explode(':', $time_tracker_info->work_time);
-                                                                    
+                                                                    [$hours2, $minutes2] = explode(
+                                                                        ':',
+                                                                        $time_tracker_info->work_time,
+                                                                    );
+
                                                                     // Convert hours and minutes to integers
                                                                     $hours1 = (int) $hours1;
                                                                     $minutes1 = (int) $minutes1;
                                                                     $hours2 = (int) $hours2;
                                                                     $minutes2 = (int) $minutes2;
-                                                                    
+
                                                                     // Perform addition for hours and minutes separately
                                                                     $totalHours = $hours1 + $hours2;
                                                                     $totalMinutes = $minutes1 + $minutes2;
-                                                                    
+
                                                                     // Adjust total hours if minutes exceed 59
                                                                     if ($totalMinutes >= 60) {
                                                                         $additionalHours = floor($totalMinutes / 60);
                                                                         $totalHours += $additionalHours;
                                                                         $totalMinutes = $totalMinutes % 60;
                                                                     }
-                                                                    
+
                                                                     // Format the result as "HH:MM"
-                                                                    $total_time = sprintf('%02d:%02d', $totalHours, $totalMinutes);
+                                                                    $total_time = sprintf(
+                                                                        '%02d:%02d',
+                                                                        $totalHours,
+                                                                        $totalMinutes,
+                                                                    );
                                                                 @endphp
-                                                                    @if($time_tracker_info->user_id == auth()->user()->id)
-                                                                       <td>
-                                                                           
-                                                                           <a href="{{route('edit_hr_time_tracker_info',['id'=>$time_tracker_info])}}"
-                                                                        class="btn btn-warning btn-sm"><i
-                                                                class="feather feather-edit"></i></a>
-                                                                   <a href="{{route('hr_delete_time_tracker',['id'=>$time_tracker_info])}}"
-                                                                        class="btn btn-danger btn-sm"><i
-                                                                class="feather feather-trash"></i></a>
-                                                                </td>
+                                                                @if ($time_tracker_info->user_id == auth()->user()->id)
+                                                                    <td>
+
+                                                                        <a href="{{ route('edit_hr_time_tracker_info', ['id' => $time_tracker_info]) }}"
+                                                                            class="btn btn-warning btn-sm"><i
+                                                                                class="feather feather-edit"></i></a>
+                                                                        <a href="{{ route('hr_delete_time_tracker', ['id' => $time_tracker_info]) }}"
+                                                                            class="btn btn-danger btn-sm"><i
+                                                                                class="feather feather-trash"></i></a>
+                                                                    </td>
                                                                 @endif
                                                             </tr>
                                                         @endforeach
@@ -260,7 +286,6 @@
                                 </div>
                             </div>
                         @endforeach
-                        
                     @else
                         <div class="card-body">
                             <div class="table-responsive">
@@ -278,7 +303,7 @@
             </div>
         </div>
         @if (count($data) > 1)
-        {{$employees->links()}}
+            {{ $employees->links() }}
         @endif
     @endsection
     @section('scripts')
