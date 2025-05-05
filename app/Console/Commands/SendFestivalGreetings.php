@@ -42,10 +42,10 @@ class SendFestivalGreetings extends Command
 
         foreach ($festivals as $festival) {
             $this->info("Processing greetings for: {$festival->occasion} on {$festival->start_date}");
-            
+
             foreach ($users as $user) {
                 // Queue the email with incremental delay
-                Mail::to('deepak.quantumitinnovation@gmail.com')
+                Mail::to($user->email)
                     ->later(now()->addSeconds($delaySeconds), new FestivalGreetingMail($user, $festival));
 
                 // Log the scheduled email
