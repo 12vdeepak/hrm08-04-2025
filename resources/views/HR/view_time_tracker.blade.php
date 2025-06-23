@@ -113,8 +113,8 @@
                                                             @foreach ($time_tracker as $time_tracker_info)
                                                                 <tr>
                                                                     <td>{{ $loop->iteration }}</td>
-                                                                    <td>{{ $time_tracker_info->project->name }}</td>
-                                                                    <td>{{ $time_tracker_info->job->name }}</td>
+                                                                    <td>{{ $time_tracker_info->project?->name ?? 'N/A' }}</td>
+                                                                    <td>{{ $time_tracker_info->job?->name ?? 'N/A' }}</td>
                                                                     <td>{{ $time_tracker_info->work_title }}</td>
                                                                     <td>{{ $time_tracker_info->work_time }}</td>
                                                                     @php
@@ -227,8 +227,8 @@
                                                         @foreach ($time_tracker as $time_tracker_info)
                                                             <tr>
                                                                 <td>{{ $loop->iteration }}</td>
-                                                                <td>{{ $time_tracker_info->project->name }}</td>
-                                                                <td>{{ $time_tracker_info->job->name }}</td>
+                                                                <td>{{ $time_tracker_info->project?->name ?? 'N/A' }}</td>
+                                                                <td>{{ $time_tracker_info->job?->name ?? 'N/A' }}</td>
                                                                 <td>{{ $time_tracker_info->work_title }}</td>
                                                                 <td>{{ $time_tracker_info->work_time }}</td>
                                                                 @php
