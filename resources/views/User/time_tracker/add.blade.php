@@ -3,6 +3,14 @@
 @section('styles')
     <!-- jQuery -->
     <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
+    <style>
+        #toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1055;
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -11,6 +19,8 @@
             <div class="page-title">Add Time Tracker</div>
         </div>
     </div>
+
+    <div id="toast-container"></div>
 
     <div class="row">
         <form action="{{ route('create_time_tracker_info') }}" method="POST">
@@ -46,30 +56,6 @@
                                         data-bs-target="#project_name"><i class="fa fa-plus me-1"></i>Add</a></button>
                                 </div>
                             </div>
-                            <script>
-                                $(document).ready(function() {
-                                    $('#projectname-form').on('submit', function(e) {
-                                        e.preventDefault();
-                                        $.ajax({
-                                            url: '{{ route('add_project_name') }}',
-                                            type: "POST",
-                                            data: $('#projectname-form').serialize(),
-                                            success: function(response) {
-                                                $('#project_name').modal('hide');
-                                                console.log(response);
-                                                var projectname = response.project_name;
-                                                var dropdown = $('select[name="project_name"]');
-                                                var newOption = $('<option>').val(projectname.id).text(projectname
-                                                    .name);
-                                                dropdown.prepend(newOption);
-                                            },
-                                            error: function(error) {
-                                                console.log(error);
-                                            }
-                                        });
-                                    });
-                                });
-                            </script>
                         </div>
                         <div class="form-group">
                             <div class="row">
@@ -99,29 +85,6 @@
                                         data-bs-target="#job_name"><i class="fa fa-plus me-1"></i>Add</a></button>
                                 </div>
                             </div>
-                            <script>
-                                $(document).ready(function() {
-                                    $('#jobname-form').on('submit', function(e) {
-                                        e.preventDefault();
-                                        $.ajax({
-                                            url: '{{ route('add_job_name') }}',
-                                            type: "POST",
-                                            data: $('#jobname-form').serialize(),
-                                            success: function(response) {
-                                                $('#job_name').modal('hide');
-                                                console.log(response);
-                                                var jobname = response.job_name;
-                                                var dropdown = $('select[name="job_name"]');
-                                                var newOption = $('<option>').val(jobname.id).text(jobname.name);
-                                                dropdown.prepend(newOption);
-                                            },
-                                            error: function(error) {
-                                                console.log(error);
-                                            }
-                                        });
-                                    });
-                                });
-                            </script>
                         </div>
                         <div class="form-group">
                             <div class="row">
@@ -165,9 +128,9 @@
                                 </div>
 
                                 <div class="col-md-12 col-lg-8 mt-3">
-                                   
 
-                                  
+
+
                                     <div class="col" id="hours"
                                         style="display: {{ old('timelogTime') == 0 ? '' : 'none' }};">
                                         <input type="text" name="hours"
@@ -180,21 +143,21 @@
                                         @enderror
                                     </div>
 
-                                  
 
-                                           
-                                        </div>
-                                    </div>
+
+
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="card-footer">
-                <button class="btn btn-primary" type="submit">Save</button>
-            </div>
-        </form>
+    </div>
+    </div>
+    <div class="card-footer">
+        <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+    </form>
     </div>
 @endsection
 
@@ -268,5 +231,67 @@
                 rangeDiv.style.display = 'block'; // Show the range div
             }
         }
+
+        // Reusable function to show a toast notification
+        function showSuccessToast(message) {
+            var toastId = 'success-toast-' + Date.now();
+            var toastHtml = `
+                <div id="${toastId}" class="toast align-items-center bg-success text-white border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000" style="min-width: 200px;">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            var $toast = $(toastHtml);
+            $('#toast-container').append($toast);
+            var toast = new bootstrap.Toast($toast[0]);
+            toast.show();
+            $toast.on('hidden.bs.toast', function() {
+                $toast.remove();
+            });
+        }
+        $(document).ready(function() {
+            $('#projectname-form').on('submit', function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '{{ route('add_project_name') }}',
+                    type: "POST",
+                    data: $('#projectname-form').serialize(),
+                    success: function(response) {
+                        $('#project_name').modal('hide');
+                        var projectname = response.project_name;
+                        var dropdown = $('select[name="project_name"]');
+                        var newOption = $('<option>').val(projectname.id).text(projectname.name);
+                        dropdown.prepend(newOption);
+                        showSuccessToast(response.message);
+                    },
+                    error: function(error) {
+                        console.log(error);
+                    }
+                });
+            });
+            $('#jobname-form').on('submit', function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '{{ route('add_job_name') }}',
+                    type: "POST",
+                    data: $('#jobname-form').serialize(),
+                    success: function(response) {
+                        $('#job_name').modal('hide');
+                        var jobname = response.job_name;
+                        var dropdown = $('select[name="job_name"]');
+                        var newOption = $('<option>').val(jobname.id).text(jobname.name);
+                        dropdown.prepend(newOption);
+                        showSuccessToast(response.message);
+                    },
+                    error: function(error) {
+                        console.log(error);
+                    }
+                });
+            });
+        });
     </script>
 @endsection
