@@ -157,8 +157,8 @@
                                     @endif
                                 </td>
 
-                                <td>{{ $time_tracker_info->project->name }}</td>
-                                <td>{{ $time_tracker_info->job->name }}</td>
+                                <td>{{ $time_tracker_info->project->name ?? '' }}</td>
+                                <td>{{ $time_tracker_info->job->name ?? '' }}</td>
                                 <td>{{ $time_tracker_info->work_title }}</td>
                                 <td>{{ $time_tracker_info->work_time }}</td>
 
