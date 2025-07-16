@@ -24,9 +24,9 @@ class LogoutReminderMail extends Mailable
     {
         return $this->subject('HRMS Logout Pending')
             ->cc([
-                'deepak.quantumitinnovation@gmail.com',
-                // 'mansi@quantumitinnovation.com',
-                // 'sanchitha@quantumitinnovation.com',
+                'hr@quantumitinnovation.com',
+                'mansi@quantumitinnovation.com',
+                'sanchitha@quantumitinnovation.com',
             ])
             ->view('emails.logout_reminder')
             ->with([

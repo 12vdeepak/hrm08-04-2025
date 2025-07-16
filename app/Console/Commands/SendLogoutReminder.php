@@ -63,13 +63,12 @@ class SendLogoutReminder extends Command
             ->select('u.id', 'u.name', 'u.lastname', 'u.email')
             ->get();
 
-        // dd($usersToNotify);
+        
 
         foreach ($usersToNotify as $user) {
             $fullName = $user->name . ' ' . $user->lastname;
-            // Queue the email to test address only
-            Mail::to('deepak.quanutmitinnovation@gmail.com')->queue(new LogoutReminderMail($fullName));
-            // Mail::to($user->email)->queue(new LogoutReminderMail($fullName));
+            // Queue the email
+            Mail::to($user->email)->queue(new LogoutReminderMail($fullName));
         }
 
         // At 10:30 PM, generate and send the pending logout report as an email (not Excel)
