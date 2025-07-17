@@ -20,14 +20,13 @@ class PendingLogoutReportMail extends Mailable
         $this->pendingUsers = $pendingUsers;
     }
 
-    /**
-     * Build the message.
-     */
     public function build()
     {
         return $this->subject('Daily Logout Pending Employees report')
-            ->to(['deepak.quantumitinnovation@gmail.com'])
+            ->to(['hr@quantumitinnovation.com', 'mansi@quantumitinnovation.com', 'sanchitha@quantumitinnovation.com'])
             ->view('emails.daily_logout_pending_report')
             ->with(['pendingUsers' => $this->pendingUsers]);
     }
+
+    
 }
