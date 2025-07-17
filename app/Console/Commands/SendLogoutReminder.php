@@ -41,39 +41,37 @@ class SendLogoutReminder extends Command
             return;
         }
 
-        // Get users who are on leave with status "Accepted By HR"
-        $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
-            ->whereDate('start_date', '<=', $today)
-            ->whereDate('end_date', '>=', $today)
-            ->pluck('user_id')
-            ->toArray();
+        if (now()->format('H:i') === '22:00') {
+            // Get users who are on leave with status "Accepted By HR"
+            $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->pluck('user_id')
+                ->toArray();
 
-        // Get users who checked in today but have not logged out (end_time is null)
-        $checkedInNotLoggedOutUserIds = CheckIn::whereDate('start_time', $today)
-            ->whereNull('end_time')
-            ->pluck('user_id')
-            ->toArray();
+            // Get users who checked in today but have not logged out (end_time is null)
+            $checkedInNotLoggedOutUserIds = CheckIn::whereDate('start_time', $today)
+                ->whereNull('end_time')
+                ->pluck('user_id')
+                ->toArray();
 
-        // Main query: active users only
-        $usersToNotify = DB::table('users as u')
-            ->where('u.employee_status', 1)
-            ->whereNull('u.deleted_at')
-            ->whereIn('u.id', $checkedInNotLoggedOutUserIds)
-            ->whereNotIn('u.id', $onLeaveUserIds)
-            ->select('u.id', 'u.name', 'u.lastname', 'u.email')
-            ->get();
+            // Main query: active users only
+            $usersToNotify = DB::table('users as u')
+                ->where('u.employee_status', 1)
+                ->whereNull('u.deleted_at')
+                ->whereIn('u.id', $checkedInNotLoggedOutUserIds)
+                ->whereNotIn('u.id', $onLeaveUserIds)
+                ->select('u.id', 'u.name', 'u.lastname', 'u.email')
+                ->get();
 
-        
-
-        foreach ($usersToNotify as $user) {
-            $fullName = $user->name . ' ' . $user->lastname;
-            // Queue the email
-            Mail::to($user->email)->queue(new LogoutReminderMail($fullName));
+            foreach ($usersToNotify as $user) {
+                $fullName = $user->name . ' ' . $user->lastname;
+                // Queue the email
+                Mail::to($user->email)->queue(new LogoutReminderMail($fullName));
+            }
         }
 
-        // At 10:30 PM, generate and send the pending logout report as an email (not Excel)
-        if (now()->format('H:i') === '22:30') {
-            $today = Carbon::today();
+        if (now()->format('H:i') === '23:00') {
             $pendingUsers = DB::table('check_ins as ci')
                 ->join('users as u', 'ci.user_id', '=', 'u.id')
                 ->whereDate('ci.start_time', $today)
@@ -82,7 +80,7 @@ class SendLogoutReminder extends Command
                 ->whereNull('u.deleted_at')
                 ->select('u.name', 'u.lastname', 'u.email', 'ci.start_time', 'ci.start_time_location')
                 ->get();
-            \Mail::queue(new PendingLogoutReportMail($pendingUsers));
+            Mail::queue(new PendingLogoutReportMail($pendingUsers));
         }
     }
 }

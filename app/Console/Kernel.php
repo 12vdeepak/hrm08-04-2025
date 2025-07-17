@@ -19,7 +19,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('emails:send-birthday-wishes')->dailyAt('08:00');
         $schedule->command('festival:greet')
         ->dailyAt('09:00');
-        $schedule->command('send:logout-reminder')->weekdays()->at('22:00');
+        $schedule->command('send:logout-reminder')->weekdays()->at('22:00'); // Reminder
+        $schedule->command('send:logout-reminder')->weekdays()->at('23:00'); // Pending logout report
     }
 
 
