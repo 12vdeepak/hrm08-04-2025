@@ -1,6 +1,6 @@
 @php
     $reportRows = $reportRows ?? [];
-    $message = $message ?? '';
+    $reportMessage = $reportMessage ?? '';
 @endphp
 
 <!DOCTYPE html>
@@ -22,7 +22,7 @@
     <div class="container">
         <h2>Weekly Login Compliance Report</h2>
         <p>Dear HR,</p>
-        <p>{!! $message !!}</p>
+        <p>{!! $reportMessage !!}</p>
         <table>
             <thead>
                 <tr>

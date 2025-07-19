@@ -11,15 +11,15 @@ class WeeklyLoginComplianceReportMail extends Mailable
     use Queueable, SerializesModels;
 
     public $reportRows;
-    public $message;
+    public $reportMessage;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($reportRows, $message = null)
+    public function __construct($reportRows, $reportMessage = null)
     {
         $this->reportRows = $reportRows;
-        $this->message = $message ?? 'Please find below the weekly login compliance report for employees who did not complete 9 hours on any day:';
+        $this->reportMessage = $reportMessage ?? 'Please find below the weekly login compliance report for employees who did not complete 9 hours on any day:';
     }
 
     /**
@@ -33,7 +33,7 @@ class WeeklyLoginComplianceReportMail extends Mailable
             ->view('emails.weekly_login_compliance_report')
             ->with([
                 'reportRows' => $this->reportRows,
-                'message' => $this->message,
+                'reportMessage' => $this->reportMessage,
             ]);
     }
 } 
