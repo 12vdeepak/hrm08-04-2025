@@ -21,6 +21,7 @@ class Kernel extends ConsoleKernel
         ->dailyAt('09:00');
         $schedule->command('send:logout-reminder')->weekdays()->at('22:00'); // Reminder
         $schedule->command('send:logout-reminder')->weekdays()->at('23:00'); // Pending logout report
+        $schedule->command('send:weekly-login-compliance-report')->fridays()->at('18:00');
     }
 
 
