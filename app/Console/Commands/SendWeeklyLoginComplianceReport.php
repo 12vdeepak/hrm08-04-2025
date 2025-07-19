@@ -30,7 +30,7 @@ class SendWeeklyLoginComplianceReport extends Command
         $endOfWeek = $today->copy()->endOfWeek();     // Sunday
 
         $allUsers = User::where('employee_status', 1)->get();
-        $hrEmails = ['deepak.quantumitinnovation@gmail.com'];
+        $hrEmails = ['hr@quantumitinnovation.com','mansi@quantumitinnovation.com','sanchitha@quantumitinnovation.com'];
         $reportRows = [];
 
         foreach ($allUsers as $user) {
