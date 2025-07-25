@@ -114,10 +114,9 @@ class SendWeeklyLoginComplianceReport extends Command
 
         $body = 'Please find below the weekly login compliance report for employees who did not complete 9 hours on any day:';
 
-        foreach ($hrEmails as $email) {
-            Mail::to($email)->queue(new WeeklyLoginComplianceReportMail($reportRows, $body));
-        }
+        Mail::to($hrEmails)->queue(new WeeklyLoginComplianceReportMail($reportRows, $body));
+
 
         $this->info('Weekly login compliance report sent to HR.');
     }
-} 
+}
