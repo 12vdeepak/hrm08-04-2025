@@ -71,7 +71,13 @@ class WeeklyLateCheckInReport extends Command
             // Send to HR
             // $hrEmail = config('hr.email', 'hr@example.com');
 
-            Mail::to('deepak.quantumitinnovation@gmail.com')->send(new WeeklyLateCheckInReportMail($lateCheckIns));
+             Mail::to([
+                'hr@quantumitinnovation.com',
+
+            ])->cc(['mansi@quantumitinnovation.com',
+                'sanchitha@quantumitinnovation.com',
+                'harmeet@quantumitinnovation.com',
+            ])->send(new WeeklyLateCheckInReportMail($lateCheckIns));
 
             $this->info("Report sent to HR with " . count($lateCheckIns) . " entries.");
         } else {
