@@ -18,15 +18,8 @@ class SendTimeTrackerReportToHR extends Command
      *
      * @var string
      */
-    protected $signature = 'app:send-time-tracker-report-to-h-r';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Command description';
-
+    protected $signature = 'send:weekly-tracker-report';
+    protected $description = 'Send weekly report of users who didn’t complete 8 hours';
     /**
      * Execute the console command.
      */
