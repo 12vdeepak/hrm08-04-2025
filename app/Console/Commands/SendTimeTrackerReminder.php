@@ -33,7 +33,7 @@ class SendTimeTrackerReminder extends Command
      */
 public function handle()
 {
-    $today = Carbon::yesterday()->format('Y-m-d');
+    $today = Carbon::today()->format('Y-m-d');
 
     // Check if today is a holiday
     $isHoliday = Holiday::where('start_date', '<=', $today)
@@ -57,7 +57,7 @@ public function handle()
             ->exists();
 
         if ($onLeave) {
-            continue; // Skip users on approved leave
+            continue;
         }
 
         // Get today's time tracker entries
@@ -75,22 +75,17 @@ public function handle()
             }
         }
 
-        // If less than 8 hours, add to reminder list
         if ($totalMinutes < 480) {
             $reminderUsers[] = $user;
         }
     }
-     dd($reminderUsers);
 
-    // foreach ($reminderUsers as $user) {
-    //     Mail::to($user->email)->queue(new TimeTrackerReminderMail($user));
-    // }
-    $testEmail = 'deepak.quantumitinnovation@gmail.com';
-
+    // Send actual reminder emails to users (LIVE)
     foreach ($reminderUsers as $user) {
-        Mail::to($testEmail)->queue(new TimeTrackerReminderMail($user));
+        Mail::to($user->email)->queue(new TimeTrackerReminderMail($user));
     }
 
     $this->info(count($reminderUsers) . ' users reminded to fill 8 hours in Time Tracker.');
 }
+
 }

@@ -23,6 +23,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('send:logout-reminder')->weekdays()->at('23:00'); // Pending logout report
         $schedule->command('send:weekly-login-compliance-report')->fridays()->at('23:00');
         $schedule->command('send:time-tracker-reminder')->weekdays('23:00');
+        $schedule->command('send:weekly-tracker-report')->fridays()->at('23:00');
+
     }
 
 
