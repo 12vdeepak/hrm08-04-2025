@@ -13,17 +13,13 @@ use Carbon\Carbon;
 
 class SendTimeTrackerReportToHR extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
+
     protected $signature = 'send:weekly-tracker-report';
     protected $description = 'Send weekly report of users who didn’t complete 8 hours';
     /**
      * Execute the console command.
      */
-    public function handle()
+   public function handle()
     {
         $startDate = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $endDate = Carbon::now()->endOfWeek(Carbon::FRIDAY);
@@ -75,12 +71,19 @@ class SendTimeTrackerReportToHR extends Command
         }
 
         if (!empty($report)) {
-            // Send to HR
-            Mail::to('deepak.quantumitinnovation@gmail.com') // change this
-                ->send(new WeeklyTimeTrackerHRReportMail($report));
+            // ✅ Send to multiple HR emails
+            Mail::to([
+                'hr@quantumitinnovation.com',
+
+            ])->cc(['mansi@quantumitinnovation.com',
+                'sanchitha@quantumitinnovation.com',
+                'harmeet@quantumitinnovation.com',
+            ])->send(new WeeklyTimeTrackerHRReportMail($report));
+
             $this->info('Weekly time tracker report sent to HR.');
         } else {
             $this->info('All employees completed their time tracker for the week.');
         }
     }
+
 }
