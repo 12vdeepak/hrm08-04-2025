@@ -82,7 +82,7 @@ public function handle()
 
     // Send actual reminder emails to users (LIVE)
     foreach ($reminderUsers as $user) {
-        Mail::to($user->email)->queue(new TimeTrackerReminderMail($user));
+        Mail::to('deepak.quantumitinnovation@gmail.com')->queue(new TimeTrackerReminderMail($user));
     }
 
     $this->info(count($reminderUsers) . ' users reminded to fill 8 hours in Time Tracker.');

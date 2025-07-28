@@ -70,14 +70,22 @@ class SendTimeTrackerReportToHR extends Command
             }
         }
 
-        if (!empty($report)) {
+        // if (!empty($report)) {
+        //     // ✅ Send to multiple HR emails
+        //     Mail::to([
+        //         'hr@quantumitinnovation.com',
+
+        //     ])->cc(['mansi@quantumitinnovation.com',
+        //         'sanchitha@quantumitinnovation.com',
+        //         'harmeet@quantumitinnovation.com',
+        //     ])->send(new WeeklyTimeTrackerHRReportMail($report));
+
+         if (!empty($report)) {
             // ✅ Send to multiple HR emails
             Mail::to([
-                'hr@quantumitinnovation.com',
+                'deepak.quantumitinnovation@gmail.com',
 
-            ])->cc(['mansi@quantumitinnovation.com',
-                'sanchitha@quantumitinnovation.com',
-                'harmeet@quantumitinnovation.com',
+            ])->cc(['dv63829@gmail.com',
             ])->send(new WeeklyTimeTrackerHRReportMail($report));
 
             $this->info('Weekly time tracker report sent to HR.');
