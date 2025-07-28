@@ -16,9 +16,15 @@
             <tr>
                 <td>{{ $entry['name'] }}</td>
                 <td>{{ $entry['email'] }}</td>
-                <td>{{ \Carbon\Carbon::parse($entry['date'])->format('Y-m-d') }}</td>
-                <td>{{ \Carbon\Carbon::parse($entry['checkin'])->format('H:i:s') }}</td>
+                <td>{{ \Carbon\Carbon::parse($entry['date'])->format('d M Y') }}</td>
 
+                <td>
+                    @if ($entry['checkin'] === 'Did not check in')
+                        <span style="color: red;">{{ $entry['checkin'] }}</span>
+                    @else
+                        {{ \Carbon\Carbon::parse($entry['checkin'])->format('H:i:s') }}
+                    @endif
+                </td>
 
             </tr>
         @endforeach
