@@ -45,9 +45,9 @@ class WeeklyLateCheckInReport extends Command
 
                 $firstCheckIn = DB::table('check_ins')
                     ->where('user_id', $user->id)
-                    ->whereDate('start_at', $date)
-                    ->orderBy('start_at', 'asc')
-                    ->value('start_at');
+                    ->whereDate('start_time', $date)
+                    ->orderBy('start_time', 'asc')
+                    ->value('start_time');
 
                 if (!$firstCheckIn) {
                     $lateCheckIns[] = [
