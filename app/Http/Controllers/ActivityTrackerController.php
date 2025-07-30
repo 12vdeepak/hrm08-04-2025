@@ -17,7 +17,11 @@ class ActivityTrackerController extends Controller
      */
     public function index($date = null)
     {
-        $employees = User::whereNotIn('role_id', [1])->paginate(10);
+        $employees = User::whereNotIn('role_id', [1])
+        ->where('employee_status', 1) // Filter only active employees
+        ->paginate(10);
+
+        dd($employees);
         if($date == null){
             $date = date('Y-m-d');
         }
@@ -62,7 +66,7 @@ class ActivityTrackerController extends Controller
      */
     public function show(string $id, $date = null)
     {
-        
+
         if($date == null){
             $date = date('Y-m-d');
         }
@@ -164,9 +168,9 @@ class ActivityTrackerController extends Controller
     }
 
     private function getTotalActivityTime($user_id, $date){
-        
+
         $acitivities  = ActivityTracker::where('user_id', $user_id)->whereDate('activity_time', '=', $date)->get();
-        // dd($acitivities);    
+        // dd($acitivities);
         $totalSeconds = 0;
         foreach ($acitivities as $entry) {
             // Calculate the time difference between start_time and end_time for each entry.
@@ -180,7 +184,7 @@ class ActivityTrackerController extends Controller
 
         // Step 4: Format the total active time in the desired format (hours:minutes:seconds).
         $hours = floor($totalSeconds / 3600);
-        
+
         $minutes = floor(($totalSeconds - ($hours * 3600)) / 60);
         $seconds = $totalSeconds - ($hours * 3600) - ($minutes * 60);
         $formattedTime = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
@@ -190,27 +194,27 @@ class ActivityTrackerController extends Controller
     private function getSubTotalTime($start_time, $end_time) {
         $startDateTime = strtotime($start_time);
         $endDateTime = strtotime($end_time);
-    
+
         // Check if the timestamps are valid
         if ($startDateTime === false || $endDateTime === false) {
             return '00:00:00'; // Return 0 if the timestamps are invalid
         }
-    
+
         // Check if the start time is before the end time
         if ($startDateTime >= $endDateTime) {
             return '00:00:00'; // Return 0 if the start time is not before the end time
         }
-    
+
         $totalSeconds = $endDateTime - $startDateTime;
         $hours = floor($totalSeconds / 3600);
         $minutes = floor(($totalSeconds - ($hours * 3600)) / 60);
         $seconds = $totalSeconds - ($hours * 3600) - ($minutes * 60);
-    
+
         $formattedTime = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
         return $formattedTime;
     }
-    
-    
-    
-    
+
+
+
+
 }
