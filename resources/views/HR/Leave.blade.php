@@ -45,60 +45,80 @@
                                                         <td>{{ $leave_request->subject }}</td>
                                                         <td>{{ $leave_request->start_date }}</td>
                                                         <td>{{ $leave_request->end_date }}</td>
-                                                        <td><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#view{{ $loop->iteration }}" >View</button></td>
-                                                        <td><button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#edit{{ $loop->iteration }}" >Edit</button></td>
+                                                        <td><button class="btn btn-primary" data-bs-toggle="modal"
+                                                                data-bs-target="#view{{ $loop->iteration }}">View</button>
+                                                        </td>
+                                                        <td><button class="btn btn-warning" data-bs-toggle="modal"
+                                                                data-bs-target="#edit{{ $loop->iteration }}">Edit</button>
+                                                        </td>
                                                     </tr>
-                                                    
-                                                    
-                                                       <div class="modal fade" id="edit{{ $loop->iteration }}" aria-hidden="true">
+
+
+                                                    <div class="modal fade" id="edit{{ $loop->iteration }}"
+                                                        aria-hidden="true">
                                                         <div class="modal-dialog">
                                                             <div class="modal-content">
                                                                 <div class="modal-header">
-                                                                    <h5 class="modal-title" id="updateStudentModalLabel">Leave Request</h5>
-                                                                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                                                            <span aria-hidden="true">×</span>
-                                                        </button>
+                                                                    <h5 class="modal-title" id="updateStudentModalLabel">
+                                                                        Leave Request</h5>
+                                                                    <button class="btn-close" data-bs-dismiss="modal"
+                                                                        aria-label="Close">
+                                                                        <span aria-hidden="true">×</span>
+                                                                    </button>
                                                                 </div>
-                                          <form action="{{ route('hr_update_leave_request', ['leave' => $leave_request->id]) }}" method="POST">
-                                                                        @csrf
-    @method('PUT')
-                                                                <div class="modal-body">
+                                                                <form
+                                                                    action="{{ route('hr_update_leave_request', ['leave' => $leave_request->id]) }}"
+                                                                    method="POST">
+                                                                    @csrf
+                                                                    @method('PUT')
+                                                                    <div class="modal-body">
 
-                                                                   <div class="form-group">
-                                                                       
-                                                                        <label class="form-label">Subject</label>
-                                                                        <input type="text" class="form-control" name="subject"
-                                                                        value="{{$leave_request->subject}}" required>
+                                                                        <div class="form-group">
+
+                                                                            <label class="form-label">Subject</label>
+                                                                            <input type="text" class="form-control"
+                                                                                name="subject"
+                                                                                value="{{ $leave_request->subject }}"
+                                                                                required>
+                                                                        </div>
+
+                                                                        <div class="form-group">
+                                                                            <label class="form-label">Description</label>
+                                                                            <input type="text" class="form-control"
+                                                                                name="description"
+                                                                                value="{{ $leave_request->description }}"
+                                                                                required>
+                                                                        </div>
+
+                                                                        <div class="form-group">
+                                                                            <label class="form-label">Start Date</label>
+                                                                            <input type="date" class="form-control"
+                                                                                name="start_date"
+                                                                                value="{{ $leave_request->start_date }}"
+                                                                                required>
+                                                                        </div>
+
+                                                                        <div class="form-group">
+                                                                            <label class="form-label">End Date</label>
+                                                                            <input type="date" class="form-control"
+                                                                                name="end_date"
+                                                                                value="{{ $leave_request->end_date }}"
+                                                                                required>
+                                                                        </div>
+                                                                        <div class="form-group">
+                                                                            <label class="form-label">Reporting Manager
+                                                                                Email</label>
+                                                                            <input type="email" class="form-control"
+                                                                                name="reporting_manager_email"
+                                                                                value="{{ $leave_request->reporting_manager_email }}"
+                                                                                required>
+                                                                        </div>
                                                                     </div>
-                                            
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">Description</label>
-                                                                        <input type="text" class="form-control" name="description"
-                                                                        value="{{$leave_request->description}}" required>
+                                                                    <div class="modal-footer">
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger">Edit</button>
+
                                                                     </div>
-                                                                    
-                                                                       <div class="form-group">
-                                                                        <label class="form-label">Start Date</label>
-                                                                        <input type="date" class="form-control" name="start_date"
-                                                                        value="{{$leave_request->start_date}}" required>
-                                                                    </div>
-                                                                    
-                                                                       <div class="form-group">
-                                                                        <label class="form-label">End Date</label>
-                                                                        <input type="date" class="form-control" name="end_date"
-                                                                        value="{{$leave_request->end_date}}" required>
-                                                                    </div>
-                                                                     <div class="form-group">
-                                                                        <label class="form-label">Reporting Manager Email</label>
-                                                                        <input type="email" class="form-control" name="reporting_manager_email"
-                                                                        value="{{$leave_request->reporting_manager_email}}" required>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="modal-footer">
-                                                                     <button type="submit" class="btn btn-danger" 
-                                                                        >Edit</button>
-                                                                    
-                                                                </div>
                                                                 </form>
                                                             </div>
                                                         </div>
@@ -106,71 +126,94 @@
                                                     <!--edit modal ends----->
 
 
-                                                    <div class="modal fade" id="view{{ $loop->iteration }}" aria-hidden="true">
+                                                    <div class="modal fade" id="view{{ $loop->iteration }}"
+                                                        aria-hidden="true">
                                                         <div class="modal-dialog">
                                                             <div class="modal-content">
                                                                 <div class="modal-header">
-                                                                    <h5 class="modal-title" id="updateStudentModalLabel">Leave Request</h5>
-                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" wire:click="closeModal"
+                                                                    <h5 class="modal-title" id="updateStudentModalLabel">
+                                                                        Leave Request</h5>
+                                                                    <button type="button" class="btn-close"
+                                                                        data-bs-dismiss="modal" wire:click="closeModal"
                                                                         aria-label="Close"></button>
                                                                 </div>
                                                                 <div class="modal-body">
                                                                     <div class="form-group">
                                                                         <label class="form-label">Type</label>
-                                                                        <input type="text" class="form-control" name="subject" readonly value="{{$leave_request->type}}">
+                                                                        <input type="text" class="form-control"
+                                                                            name="subject" readonly
+                                                                            value="{{ $leave_request->type }}">
                                                                     </div>
 
                                                                     <div class="form-group">
                                                                         <label class="form-label">Subject</label>
-                                                                        <input type="text" class="form-control" name="subject" readonly value="{{$leave_request->subject}}">
+                                                                        <input type="text" class="form-control"
+                                                                            name="subject" readonly
+                                                                            value="{{ $leave_request->subject }}">
                                                                     </div>
-                                            
+
                                                                     <div class="form-group">
                                                                         <label class="form-label">Description</label>
-                                                                        <input type="text" class="form-control" name="description"  readonly value="{{$leave_request->description}}">
+                                                                        <input type="text" class="form-control"
+                                                                            name="description" readonly
+                                                                            value="{{ $leave_request->description }}">
                                                                     </div>
-                                            
+
                                                                     <div class="form-group">
                                                                         <label class="form-label">Start Date</label>
-                                                                        <input type="date" class="form-control" name="start_date"  readonly value="{{$leave_request->start_date}}">
+                                                                        <input type="date" class="form-control"
+                                                                            name="start_date" readonly
+                                                                            value="{{ $leave_request->start_date }}">
                                                                     </div>
-                                            
+
                                                                     <div class="form-group">
                                                                         <label class="form-label">End Date</label>
-                                                                        <input type="date" class="form-control" name="end_date"  readonly value="{{$leave_request->end_date}}">
+                                                                        <input type="date" class="form-control"
+                                                                            name="end_date" readonly
+                                                                            value="{{ $leave_request->end_date }}">
                                                                     </div>
-                                            
+
                                                                     <div class="form-group">
-                                                                        <label class="form-label">Reporting Manager Email</label>
-                                                                      
-                                                                        <input type="email" class="form-control" name="reporting_manager_email"  readonly value="{{$leave_request->reporting_manager_email}}">
-                                                                        
+                                                                        <label class="form-label">Reporting Manager
+                                                                            Email</label>
+
+                                                                        <input type="email" class="form-control"
+                                                                            name="reporting_manager_email" readonly
+                                                                            value="{{ $leave_request->reporting_manager_email }}">
+
                                                                     </div>
 
                                                                     <div class="form-group">
                                                                         <label class="form-label">Status</label>
-                                                                        <input type="text" class="form-control" name="reporting_manager_email"  readonly value="{{$leave_request->status}}">
+                                                                        <input type="text" class="form-control"
+                                                                            name="reporting_manager_email" readonly
+                                                                            value="{{ $leave_request->status }}">
                                                                     </div>
-                                                                    @if($leave_request->status!="Requested")
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">Reporting Manager Comment</label>
-                                                                        <input type="email" class="form-control" name="reporting_manager_email"  readonly value="{{$leave_request->reporting_manager_comment}}">
-                                                                    </div>
-                                                                    <div class="form-group">
-                                                                        <label class="form-label">HR Comment</label>
-                                                                        <input type="email" class="form-control" name="reporting_manager_email"  readonly value="{{$leave_request->hr_comment}}">
-                                                                    </div>
+                                                                    @if ($leave_request->status != 'Requested')
+                                                                        <div class="form-group">
+                                                                            <label class="form-label">Reporting Manager
+                                                                                Comment</label>
+                                                                            <input type="email" class="form-control"
+                                                                                name="reporting_manager_email" readonly
+                                                                                value="{{ $leave_request->reporting_manager_comment }}">
+                                                                        </div>
+                                                                        <div class="form-group">
+                                                                            <label class="form-label">HR Comment</label>
+                                                                            <input type="email" class="form-control"
+                                                                                name="reporting_manager_email" readonly
+                                                                                value="{{ $leave_request->hr_comment }}">
+                                                                        </div>
                                                                     @endif
 
                                                                 </div>
                                                                 <div class="modal-footer">
-                                                                    <button type="button" class="btn btn-secondary" wire:click="closeModal"
+                                                                    <button type="button" class="btn btn-secondary"
+                                                                        wire:click="closeModal"
                                                                         data-bs-dismiss="modal">Close</button>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-
                                                 @endforeach
                                             </tbody>
                                         </table>
@@ -206,7 +249,9 @@
                             <select class="form-control" name="type">
                                 <option value="Sick Leave">Sick Leave</option>
                                 <option value="Causal Leave">Causal Leave</option>
-                              </select>
+                                <option value="First Half">First Half</option>
+                                <option value="Second Half">Second Leave</option>
+                            </select>
                         </div>
 
                         <div class="form-group">
@@ -228,12 +273,13 @@
                             <label class="form-label">End Date</label>
                             <input type="date" class="form-control" name="end_date" required>
                         </div>
-                      
+
                         <div class="form-group">
                             <label class="form-label">Reporting Manager Email</label>
-                            <input type="email" class="form-control" name="reporting_manager_email" value="hr@quantumitinnovation.com" readonly>
+                            <input type="email" class="form-control" name="reporting_manager_email"
+                                value="hr@quantumitinnovation.com" readonly>
                         </div>
-                        
+
                     </div>
 
                     <div class="modal-footer">
