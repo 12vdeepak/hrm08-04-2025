@@ -21,7 +21,6 @@ class ActivityTrackerController extends Controller
         ->where('employee_status', 1) // Filter only active employees
         ->paginate(10);
 
-        dd($employees);
         if($date == null){
             $date = date('Y-m-d');
         }
