@@ -27,6 +27,8 @@
                                         <option value="2">Yet to Check-in</option>
                                         <option value="3">Checked-out</option>
                                         <option value="4">Yet to Check-out</option>
+                                        <option value="5">Late Check-in</option>
+
                                     </select>
                                 </div>
                                 <div class="col-3">

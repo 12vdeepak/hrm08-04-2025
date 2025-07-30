@@ -12,6 +12,7 @@ use Livewire\WithPagination;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 class Attendance extends Component
 {
@@ -77,7 +78,11 @@ class Attendance extends Component
         // Filter employees based on status
         if ($this->status != 0) {
             $employees = $employees->filter(function ($employee) {
-                return $employee->log_status == $this->status;
+                if ($this->status == 5) {
+                    return $employee->is_late == true;
+                } else {
+                    return $employee->log_status == $this->status;
+                }
             });
         }
         // dd($employees);
@@ -116,7 +121,7 @@ class Attendance extends Component
 
         $check_ins = CheckIn::where('user_id', $employee->id)->whereDate('start_time', '=', $date)->get();
         $total_time = 0;
-        
+
         foreach ($check_ins as $check_in) {
             if ($check_in->end_time !== null) {
                 $total_time += strtotime($check_in->end_time) - strtotime($check_in->start_time);
@@ -176,6 +181,14 @@ class Attendance extends Component
             $employee->log_status = 3; // Checked-out
         } elseif ($employee->check_in_time != "Yet to Check-in" && $employee->check_out_time == "-") {
             $employee->log_status = 4; // Yet to Check-out
+        }
+
+        // Add is_late property
+        $employee->is_late = false;
+        if ($employee->check_in_time && $employee->check_in_time != "Yet to Check-in") {
+            if (\Carbon\Carbon::parse($employee->check_in_time)->format('H:i:s') > '11:00:00') {
+                $employee->is_late = true;
+            }
         }
 
         return $employee;
