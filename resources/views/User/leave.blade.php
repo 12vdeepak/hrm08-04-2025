@@ -250,8 +250,8 @@
                             <select class="form-control" name="type">
                                 <option value="Sick Leave">Sick Leave</option>
                                 <option value="Causal Leave">Casual Leave</option>
-                                <option value="First Half">First Half</option>
-                                <option value="Second Half">Second Half</option>
+                                <option value="First Half Day">First Half Day</option>
+                                <option value="Second Half Day">Second Half Day</option>
                             </select>
                         </div>
 
