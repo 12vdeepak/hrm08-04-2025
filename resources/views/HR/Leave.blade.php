@@ -250,7 +250,7 @@
                                 <option value="Sick Leave">Sick Leave</option>
                                 <option value="Causal Leave">Causal Leave</option>
                                 <option value="First Half">First Half</option>
-                                <option value="Second Half">Second Leave</option>
+                                <option value="Second Half">Second Half</option>
                             </select>
                         </div>
 
