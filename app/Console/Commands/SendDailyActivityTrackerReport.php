@@ -71,8 +71,6 @@ class SendDailyActivityTrackerReport extends Command
             }
         }
 
-        // Dump results for testing before sending email
-        dd($reportRows);
 
         if (empty($reportRows)) {
             $this->info('All employees are compliant today. No email sent.');
