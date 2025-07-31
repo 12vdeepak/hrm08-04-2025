@@ -42,7 +42,7 @@
                                             <tr>
                                                 <th>S.No.</th>
 
-
+                                                <th>Employee Name</th>
                                                 <th>Emp. Email</th>
                                                 <th>Department</th>
                                                 <th>Phone Number</th>
