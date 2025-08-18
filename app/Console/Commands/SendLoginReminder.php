@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use App\Models\Leave;
 use Illuminate\Console\Command;
 use App\Mail\LoginReminderMail;
+use App\Models\Holiday;
 use Illuminate\Support\Facades\Mail;
 
 class SendLoginReminder extends Command
@@ -20,6 +21,15 @@ class SendLoginReminder extends Command
 
         if ($today->isWeekend()) {
             $this->info('Weekend. No reminders sent.');
+            return;
+        }
+        // Skip holidays
+        $isHoliday = Holiday::where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->exists();
+
+        if ($isHoliday) {
+            $this->info('Holiday. No reminders sent.');
             return;
         }
 
