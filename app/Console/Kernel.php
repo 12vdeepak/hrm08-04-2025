@@ -28,7 +28,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('send:weekly-tracker-report')->fridays()->at('23:00'); // Weekly tracker report
         $schedule->command('report:weekly-late-checkins')->fridays()->at('20:00'); // Weekly late check-in report
         $schedule->command('send:daily-activity-tracker-report')->weekdays()->at('23:00'); // Daily activity tracker report for HR
-        $schedule->command('send:employee-activity-reminder')->weekdays()->at('20:30'); // Employee activity reminder
+        $schedule->command('send:employee-activity-reminder')->weekdays()->at('22:30'); // Employee activity reminder
 
 
     }

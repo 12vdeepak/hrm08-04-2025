@@ -68,17 +68,19 @@ class SendEmployeeActivityReminder extends Command
 
             // Send reminder if less than 9 hours completed
             if ($totalHours < 9) {
-                $usersBelow9Hours[] = [
-            'user_id'        => $user->id,
-            'name'           => $user->name . ' ' . $user->lastname,
-            'email'          => $user->email,
-            'total_hours'    => $totalHours,
-            'remainingHours' => round(9 - $totalHours, 2),
-            'date'           => $today->toDateString(),
-        ];
-    }
+                $remainingHours = round(9 - $totalHours, 2);
+
+                Mail::to($user->email)->queue(new EmployeeActivityReminderMail(
+                    $user,
+                    $totalHours,
+                    $remainingHours,
+                    $today
+                ));
+
+                $remindersSent++;
+                $this->info("Reminder sent to: {$user->name} {$user->lastname} ({$user->email})");
+            }
         }
-        dd($usersBelow9Hours);
 
         if ($remindersSent > 0) {
             $this->info("Total reminders sent: {$remindersSent}");
