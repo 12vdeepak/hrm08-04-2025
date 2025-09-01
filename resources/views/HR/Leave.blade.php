@@ -276,8 +276,7 @@
 
                         <div class="form-group">
                             <label class="form-label">Reporting Manager Email</label>
-                            <input type="email" class="form-control" name="reporting_manager_email"
-                                value="hr@quantumitinnovation.com" readonly>
+                            <input type="email" class="form-control" name="reporting_manager_email" required>
                         </div>
 
                     </div>

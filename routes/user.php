@@ -11,6 +11,8 @@ use App\Http\Controllers\User\TimeTrackerController;
 use App\Http\Controllers\User\EmployeeFileViewController;
 use Illuminate\Support\Facades\Route;
 
+   Route::get('/leave/approve/{leave_id}/{token}', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
+Route::get('/leave/disapprove/{leave_id}/{token}', [LeaveRequestController::class, 'disapproveLeave'])->name('leave.disapprove');
 
 Route::group(['middleware' => ['user'], 'prefix' => '/'], function () {
     Route::get('user_dashboard', [UserDashboardController::class, 'user_dashboard'])->name('user_dashboard');
@@ -38,4 +40,6 @@ Route::group(['middleware' => ['user'], 'prefix' => '/'], function () {
     Route::post('change-password-post', [UserDashboardController::class, 'change_password_post'])->name('change-password-post');
     Route::get('mark-as-all-read', [UserDashboardController::class, 'markasallread'])->name('mark-as-all-read-user');
     Route::get('files', [EmployeeFileViewController::class, 'index'])->name('employee.files')->middleware('auth');
+
+
 });
