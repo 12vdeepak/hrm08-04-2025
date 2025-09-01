@@ -15,7 +15,8 @@ use Exception;
 
 class LeaveController extends Controller
 {
-    public function add_leave_request(Request $request){
+   public function add_leave_request(Request $request)
+{
     $leave_request = new Leave();
     $leave_request->user_id = auth()->user()->id;
     $leave_request->subject = $request->subject;
@@ -30,47 +31,69 @@ class LeaveController extends Controller
     // Generate approval token
     $approval_token = $leave_request->generateApprovalToken();
 
-    //broadcast(new EventsLeave());
-    //hr
+    // Notify HR users (role_id = 2)
     $users = User::where('role_id', 2)->get();
     foreach ($users as $user) {
         Notification::send($user, new LeaveNotification($leave_request));
     }
 
-    //mail send to reporting manager and hr
+    // Reporting manager email
     $reporting_manager = $request->reporting_manager_email;
-    //change as per minal mam's request
-    $hr_emails = User::where('employee_type_id', 2)->where('employee_status', 1)->pluck('email')->toArray();
 
+    // HR emails
+    $hr_emails = User::where('employee_type_id', 2)
+                    ->where('employee_status', 1)
+                    ->pluck('email')
+                    ->toArray();
+
+    // Add your 2 additional CC emails here
+    $additional_cc_emails = [
+        'mansi@quantumitinnovation.com',
+        'hr@quantumitinnovation.com',
+    ];
+
+    // Merge HR emails with additional CC emails
+    $all_cc_emails = array_merge($hr_emails, $additional_cc_emails);
+
+    // Calculate duration
+    $start_date = \Carbon\Carbon::parse($request->start_date);
+    $end_date = \Carbon\Carbon::parse($request->end_date);
+    $duration = $start_date->diffInDays($end_date) + 1;
+
+    // Email details
     $details = [
-        'body' => "New Leave Request from " . auth()->user()->name . " " . auth()->user()->last_name ?? ' ',
-        'name' => auth()->user()->name . " " . auth()->user()->last_name ?? ' ',
+        'body' => "New Leave Request from " . auth()->user()->name . " " . (auth()->user()->last_name ?? ''),
+        'name' => auth()->user()->name . " " . (auth()->user()->last_name ?? ''),
+        'employee_email' => auth()->user()->email,
+        'employee_id' => auth()->user()->employee_id ?? 'EMP' . auth()->user()->id,
+        'designation' => auth()->user()->designation ?? 'Employee',
+        'contact' => auth()->user()->phone ?? '+1 (555) 123-4567',
         'subject' => $request->subject,
         'type' => $request->type,
         'description' => $request->description,
         'start_date' => $request->start_date,
         'end_date' => $request->end_date,
+        'duration' => $duration . ' day(s)',
         'status' => "Requested",
-        // Add approval URLs for email buttons
+        // Approval URLs
         'approve_url' => route('leave.approve', ['leave_id' => $leave_request->id, 'token' => $approval_token]),
         'disapprove_url' => route('leave.disapprove', ['leave_id' => $leave_request->id, 'token' => $approval_token]),
     ];
 
     $email = [
         'reporting_manager' => $reporting_manager,
-        'hr_emails' => $hr_emails,
+        'hr_emails' => $all_cc_emails, // Now includes HR + additional CC emails
         'details' => $details,
     ];
 
-    if($reporting_manager) {
+    // Send mail only if reporting manager is set
+    if ($reporting_manager) {
         dispatch(new SendLeaveEmail($email));
-        // Mail::to($reporting_manager)
-        //         ->cc($hr_emails)
-        //         ->send(new leaverequest($details));
     }
 
     return redirect()->route('hr_view_leave_request')->with('success', 'Leave Application Submitted Successfully');
 }
+
 
 public function approveLeave($leave_id, $token)
 {
