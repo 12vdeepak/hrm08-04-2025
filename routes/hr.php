@@ -17,7 +17,8 @@ use App\Http\Controllers\HR\FileUploadController;
 use App\Http\Controllers\HR\LeaveController;
 use Illuminate\Support\Facades\Route;
 
-
+Route::get('/leave/approve/{leave_id}/{token}', [LeaveController::class, 'approveLeave'])->name('leave.approve');
+Route::get('/leave/disapprove/{leave_id}/{token}', [LeaveController::class, 'disapproveLeave'])->name('leave.disapprove');
 Route::group(['middleware' => ['hr'], 'prefix' => '/'], function () {
     Route::get('hr_dashboard', [HRDashboardController::class, 'hr_dashboard'])->name('hr_dashboard');
     Route::post('reponse_employee_leave_application', [EmployeeLeaveRequestController::class, 'reponse_employee_leave_application'])->name('reponse_employee_leave_application');
