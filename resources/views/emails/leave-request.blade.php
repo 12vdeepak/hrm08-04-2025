@@ -222,14 +222,6 @@
                 </div>
             </div>
 
-            <!-- Professional Closing -->
-            <p>I have ensured that all my current projects and responsibilities are either completed or properly
-                delegated to team members. I will be available for any urgent matters via email or phone if needed.</p>
-
-            <p>I would appreciate your approval for this leave request. Please let me know if you need any additional
-                information or documentation.</p>
-
-            <p>Thank you for your consideration.</p>
 
             <p><strong>Best regards,</strong><br>
                 {{ $details['name'] }}<br>
