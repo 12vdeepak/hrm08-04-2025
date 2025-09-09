@@ -89,35 +89,37 @@
                                                             <td>{{ $time_tracker_info->job->name }}</td>
                                                             <td>{{ $time_tracker_info->work_title }}</td>
                                                             <td>{{ $time_tracker_info->work_time }}</td>
-                                                            @php
-                                                                $projectStartDate = \App\Models\TimeTracker::where(
-                                                                    'project_id',
-                                                                    $time_tracker_info->project_id,
-                                                                )
-                                                                    ->whereNotNull('project_start_date')
-                                                                    ->orderBy('project_start_date', 'asc')
-                                                                    ->value('project_start_date');
+                                                            @if ($shouldShowProjectDate)
+                                                                @php
+                                                                    $projectStartDate = \App\Models\TimeTracker::where(
+                                                                        'project_id',
+                                                                        $time_tracker_info->project_id,
+                                                                    )
+                                                                        ->whereNotNull('project_start_date')
+                                                                        ->orderBy('project_start_date', 'asc')
+                                                                        ->value('project_start_date');
 
-                                                                $projectCompleted = !empty($projectStartDate);
-                                                            @endphp
+                                                                    $projectCompleted = !empty($projectStartDate);
+                                                                @endphp
 
-                                                            <td>
-                                                                @if ($projectCompleted)
-                                                                    <span
-                                                                        class="badge badge-success">{{ $projectStartDate }}</span>
-                                                                @else
-                                                                    <span class="badge badge-warning">Pending BA</span>
-                                                                @endif
-                                                            </td>
-                                                            <td>
-                                                                @if ($projectCompleted)
-                                                                    <span class="badge badge-success">Completed</span>
-                                                                @elseif ($time_tracker_info->ba_notified)
-                                                                    <span class="badge badge-info">BA Notified</span>
-                                                                @else
-                                                                    <span class="badge badge-secondary">Not Sent</span>
-                                                                @endif
-                                                            </td>
+                                                                <td>
+                                                                    @if ($projectCompleted)
+                                                                        <span
+                                                                            class="badge badge-success">{{ $projectStartDate }}</span>
+                                                                    @else
+                                                                        <span class="badge badge-warning">Pending BA</span>
+                                                                    @endif
+                                                                </td>
+                                                                <td>
+                                                                    @if ($projectCompleted)
+                                                                        <span class="badge badge-success">Completed</span>
+                                                                    @elseif ($time_tracker_info->ba_notified)
+                                                                        <span class="badge badge-info">BA Notified</span>
+                                                                    @else
+                                                                        <span class="badge badge-secondary">Not Sent</span>
+                                                                    @endif
+                                                                </td>
+                                                            @endif
 
                                                             @php
                                                                 [$hours1, $minutes1] = explode(':', $total_time);
