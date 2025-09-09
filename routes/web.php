@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\SuperAdmin\DashboardController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\User\TimeTrackerController;
 
 
 /*
@@ -54,7 +55,12 @@ Route::group(['middleware' => ['auth']], function () {
 require __DIR__.'/user.php';
 require __DIR__.'/hr.php';
 
+Route::get('/ba/update-project-date/{timeTracker}', [TimeTrackerController::class, 'showUpdateForm'])
+    ->name('ba.update.project.date.form'); // can add middleware if needed
 
+// Save the date (POST)
+Route::post('/ba/update-project-date/{timeTracker}', [TimeTrackerController::class, 'updateProjectStartDate'])
+    ->name('ba.update.project.date'); // keep your permission middleware here if you have it
 
 
 

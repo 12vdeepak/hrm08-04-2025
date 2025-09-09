@@ -1,10 +1,10 @@
 @extends('layouts.user_app')
 @section('content')
-<?php
-error_reporting(0);
-?>
+    <?php
+    error_reporting(0);
+    ?>
     <div class="page-header d-xl-flex d-block">
-      
+
         <div class="page-leftheader">
             <div class="page-title">Time Tracker</div>
         </div>
@@ -74,12 +74,15 @@ error_reporting(0);
                                                         <th>Job Name</th>
                                                         <th>Work Description</th>
                                                         <th>Time</th>
+                                                        @if ($shouldShowProjectDate)
+                                                            <th>Project Start Date</th>
+                                                            <th>BA Status</th>
+                                                        @endif
                                                         <th>Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     @foreach ($time_tracker as $time_tracker_info)
-                                                    
                                                         <tr>
                                                             <td>{{ $loop->iteration }}</td>
                                                             <td>{{ $time_tracker_info->project->name }}</td>
@@ -87,36 +90,74 @@ error_reporting(0);
                                                             <td>{{ $time_tracker_info->work_title }}</td>
                                                             <td>{{ $time_tracker_info->work_time }}</td>
                                                             @php
+                                                                $projectStartDate = \App\Models\TimeTracker::where(
+                                                                    'project_id',
+                                                                    $time_tracker_info->project_id,
+                                                                )
+                                                                    ->whereNotNull('project_start_date')
+                                                                    ->orderBy('project_start_date', 'asc')
+                                                                    ->value('project_start_date');
+
+                                                                $projectCompleted = !empty($projectStartDate);
+                                                            @endphp
+
+                                                            <td>
+                                                                @if ($projectCompleted)
+                                                                    <span
+                                                                        class="badge badge-success">{{ $projectStartDate }}</span>
+                                                                @else
+                                                                    <span class="badge badge-warning">Pending BA</span>
+                                                                @endif
+                                                            </td>
+                                                            <td>
+                                                                @if ($projectCompleted)
+                                                                    <span class="badge badge-success">Completed</span>
+                                                                @elseif ($time_tracker_info->ba_notified)
+                                                                    <span class="badge badge-info">BA Notified</span>
+                                                                @else
+                                                                    <span class="badge badge-secondary">Not Sent</span>
+                                                                @endif
+                                                            </td>
+
+                                                            @php
                                                                 [$hours1, $minutes1] = explode(':', $total_time);
-                                                                [$hours2, $minutes2] = explode(':', $time_tracker_info->work_time);
-                                                                
+                                                                [$hours2, $minutes2] = explode(
+                                                                    ':',
+                                                                    $time_tracker_info->work_time,
+                                                                );
+
                                                                 // Convert hours and minutes to integers
                                                                 $hours1 = (int) $hours1;
                                                                 $minutes1 = (int) $minutes1;
                                                                 $hours2 = (int) $hours2;
                                                                 $minutes2 = (int) $minutes2;
-                                                                
+
                                                                 // Perform addition for hours and minutes separately
                                                                 $totalHours = $hours1 + $hours2;
                                                                 $totalMinutes = $minutes1 + $minutes2;
-                                                                
+
                                                                 // Adjust total hours if minutes exceed 59
                                                                 if ($totalMinutes >= 60) {
                                                                     $additionalHours = floor($totalMinutes / 60);
                                                                     $totalHours += $additionalHours;
                                                                     $totalMinutes = $totalMinutes % 60;
                                                                 }
-                                                                
+
                                                                 // Format the result as "HH:MM"
-                                                                $total_time = sprintf('%02d:%02d', $totalHours, $totalMinutes);
+                                                                $total_time = sprintf(
+                                                                    '%02d:%02d',
+                                                                    $totalHours,
+                                                                    $totalMinutes,
+                                                                );
                                                             @endphp
-                                                            <td><a href="{{route('edit_time_tracker_info',['id'=>$time_tracker_info])}}"
-                                                            class="btn btn-warning btn-sm"><i
-                                                                class="feather feather-edit"></i></a>
-                                                                 <a href="{{route('delete_time_tracker_info',['id'=>$time_tracker_info])}}"
-                                                            class="btn btn-danger btn-sm"><i
-                                                                class="feather feather-trash"></i></a>
-                                                                </td>
+                                                            <td><a href="{{ route('edit_time_tracker_info', ['id' => $time_tracker_info]) }}"
+                                                                    class="btn btn-warning btn-sm"><i
+                                                                        class="feather feather-edit"></i></a>
+                                                                <a href="{{ route('delete_time_tracker_info', ['id' => $time_tracker_info]) }}"
+                                                                    class="btn btn-danger btn-sm"><i
+                                                                        class="feather feather-trash"></i></a>
+
+                                                            </td>
                                                         </tr>
                                                     @endforeach
                                                 </tbody>
