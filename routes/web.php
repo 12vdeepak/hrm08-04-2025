@@ -62,6 +62,11 @@ Route::get('/ba/update-project-date/{timeTracker}', [TimeTrackerController::clas
 Route::post('/ba/update-project-date/{timeTracker}', [TimeTrackerController::class, 'updateProjectStartDate'])
     ->name('ba.update.project.date'); // keep your permission middleware here if you have it
 
+   Route::get('/projects/{id}/start-date', [TimeTrackerController::class, 'getProjectStartDate'])
+    ->name('projects.start-date');
+
+
+
 
 
 

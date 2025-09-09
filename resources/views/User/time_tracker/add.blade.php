@@ -23,160 +23,183 @@
     <div id="toast-container"></div>
 
     <div class="row">
-    <form action="{{ route('create_time_tracker_info') }}" method="POST">
-        @csrf
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
+        <form action="{{ route('create_time_tracker_info') }}" method="POST">
+            @csrf
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
 
-                    {{-- Project Name --}}
-                    <div class="form-group">
-                        <div class="row">
-                            <div class="col-md-12 col-lg-2">
-                                <label class="form-label mb-0 mt-2">Project Name</label>
-                            </div>
-                            <div class="col-md-12 col-lg-8">
-                                <select class="form-control @error('project_name') is-invalid @enderror select2"
+                        {{-- Project Name --}}
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12 col-lg-2">
+                                    <label class="form-label mb-0 mt-2">Project Name</label>
+                                </div>
+                                <div class="col-md-12 col-lg-8">
+                                    <select class="form-control @error('project_name') is-invalid @enderror select2"
                                         name="project_name" data-placeholder="Select">
-                                    <option value="" {{ old('project_name') == '' ? 'selected' : '' }}>Select</option>
-                                    @foreach ($project_names as $project_name)
-                                        <option value="{{ $project_name->id }}" {{ old('project_name') == $project_name->id ? 'selected' : '' }}>
-                                            {{ $project_name->name }}
+                                        <option value="" {{ old('project_name') == '' ? 'selected' : '' }}>Select
                                         </option>
-                                    @endforeach
-                                </select>
-                                @error('project_name')
-                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
-                                @enderror
-                            </div>
-                            <div class="col-md-12 col-lg-2">
-                                <a class="btn btn-success text-white mt-4 mt-lg-0" data-bs-toggle="modal" data-bs-target="#project_name">
-                                    <i class="fa fa-plus me-1"></i>Add
-                                </a>
+                                        @foreach ($project_names as $project_name)
+                                            <option value="{{ $project_name->id }}"
+                                                {{ old('project_name') == $project_name->id ? 'selected' : '' }}>
+                                                {{ $project_name->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('project_name')
+                                        <span class="invalid-feedback"
+                                            role="alert"><strong>{{ $message }}</strong></span>
+                                    @enderror
+                                </div>
+                                <div class="col-md-12 col-lg-2">
+                                    <a class="btn btn-success text-white mt-4 mt-lg-0" data-bs-toggle="modal"
+                                        data-bs-target="#project_name">
+                                        <i class="fa fa-plus me-1"></i>Add
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {{-- Job Name --}}
-                    <div class="form-group">
-                        <div class="row">
-                            <div class="col-md-12 col-lg-2">
-                                <label class="form-label mb-0 mt-2">Job Name</label>
-                            </div>
-                            <div class="col-md-12 col-lg-8">
-                                <select class="form-control @error('job_name') is-invalid @enderror select2"
+                        {{-- Job Name --}}
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12 col-lg-2">
+                                    <label class="form-label mb-0 mt-2">Job Name</label>
+                                </div>
+                                <div class="col-md-12 col-lg-8">
+                                    <select class="form-control @error('job_name') is-invalid @enderror select2"
                                         name="job_name" data-placeholder="Select">
-                                    <option value="" {{ old('job_name') == '' ? 'selected' : '' }}>Select</option>
-                                    @foreach ($job_names as $job_name)
-                                        <option value="{{ $job_name->id }}" {{ old('job_name') == $job_name->id ? 'selected' : '' }}>
-                                            {{ $job_name->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('job_name')
-                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
-                                @enderror
-                            </div>
-                            <div class="col-md-12 col-lg-2">
-                                <a class="btn btn-success text-white mt-4 mt-lg-0" data-bs-toggle="modal" data-bs-target="#job_name">
-                                    <i class="fa fa-plus me-1"></i>Add
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Date --}}
-                    <div class="form-group">
-                        <div class="row">
-                            <div class="col-md-12 col-lg-2">
-                                <label class="form-label mb-0 mt-2">Date</label>
-                            </div>
-                            <div class="col-md-12 col-lg-8">
-                                <input type="date" class="form-control @error('date') is-invalid @enderror"
-                                       name="date" value="{{ old('date') ?? date('Y-m-d') }}">
-                                @error('date')
-                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Work Description --}}
-                    <div class="form-group">
-                        <div class="row">
-                            <div class="col-md-12 col-lg-2">
-                                <label class="form-label mb-0 mt-2">Work Description</label>
-                            </div>
-                            <div class="col-md-12 col-lg-8">
-                                <input type="text" class="form-control @error('work_description') is-invalid @enderror"
-                                       name="work_description" placeholder="Work Description"
-                                       value="{{ old('work_description') }}">
-                                @error('work_description')
-                                    <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Time --}}
-                    <div class="form-group">
-                        <div class="row">
-                            <div class="col-md-12 col-lg-2">
-                                <label class="form-label mb-0 mt-2">Time</label>
-                            </div>
-                            <div class="col-md-12 col-lg-8 mt-3">
-                                <div id="hours" style="display: {{ old('timelogTime') == 0 ? '' : 'none' }};">
-                                    <input type="text" name="hours"
-                                           class="form-control @error('hours') is-invalid @enderror"
-                                           value="{{ old('hours') ?? '00:00' }}">
-                                    @error('hours')
-                                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                        <option value="" {{ old('job_name') == '' ? 'selected' : '' }}>Select</option>
+                                        @foreach ($job_names as $job_name)
+                                            <option value="{{ $job_name->id }}"
+                                                {{ old('job_name') == $job_name->id ? 'selected' : '' }}>
+                                                {{ $job_name->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('job_name')
+                                        <span class="invalid-feedback"
+                                            role="alert"><strong>{{ $message }}</strong></span>
                                     @enderror
+                                </div>
+                                <div class="col-md-12 col-lg-2">
+                                    <a class="btn btn-success text-white mt-4 mt-lg-0" data-bs-toggle="modal"
+                                        data-bs-target="#job_name">
+                                        <i class="fa fa-plus me-1"></i>Add
+                                    </a>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {{-- BA Email + Project Start Date (only for certain departments) --}}
-                    @if($showProjectStartDate)
+                        {{-- Date --}}
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-md-12 col-lg-2">
-                                    <label class="form-label mb-0 mt-2">BA Email <span class="text-danger">*</span></label>
+                                    <label class="form-label mb-0 mt-2">Date</label>
                                 </div>
                                 <div class="col-md-12 col-lg-8">
-                                    <input type="email" class="form-control @error('ba_email') is-invalid @enderror"
-                                           name="ba_email" value="{{ old('ba_email') }}"
-                                           placeholder="Enter Business Analyst email address" required>
-                                    <small class="text-muted">Email notification will be sent to this address.</small>
-                                    @error('ba_email')
-                                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                    <input type="date" class="form-control @error('date') is-invalid @enderror"
+                                        name="date" value="{{ old('date') ?? date('Y-m-d') }}">
+                                    @error('date')
+                                        <span class="invalid-feedback"
+                                            role="alert"><strong>{{ $message }}</strong></span>
                                     @enderror
                                 </div>
                             </div>
                         </div>
 
+                        {{-- Work Description --}}
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-md-12 col-lg-2">
-                                    <label class="form-label mb-0 mt-2">Project Start Date</label>
+                                    <label class="form-label mb-0 mt-2">Work Description</label>
                                 </div>
                                 <div class="col-md-12 col-lg-8">
-                                    <input type="date" class="form-control @error('project_start_date') is-invalid @enderror"
-                                           name="project_start_date" value="{{ old('project_start_date') }}"
-                                           readonly>
-                                    <small class="text-muted">This field will be filled by BA after email notification.</small>
-                                    @error('project_start_date')
-                                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                    <input type="text"
+                                        class="form-control @error('work_description') is-invalid @enderror"
+                                        name="work_description" placeholder="Work Description"
+                                        value="{{ old('work_description') }}">
+                                    @error('work_description')
+                                        <span class="invalid-feedback"
+                                            role="alert"><strong>{{ $message }}</strong></span>
                                     @enderror
                                 </div>
                             </div>
                         </div>
-                    @endif
 
+                        {{-- Time --}}
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12 col-lg-2">
+                                    <label class="form-label mb-0 mt-2">Time</label>
+                                </div>
+                                <div class="col-md-12 col-lg-8 mt-3">
+                                    <div id="hours" style="display: {{ old('timelogTime') == 0 ? '' : 'none' }};">
+                                        <input type="text" name="hours"
+                                            class="form-control @error('hours') is-invalid @enderror"
+                                            value="{{ old('hours') ?? '00:00' }}">
+                                        @error('hours')
+                                            <span class="invalid-feedback"
+                                                role="alert"><strong>{{ $message }}</strong></span>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- BA Email + Project Start Date (only for certain departments) --}}
+                        @if ($showProjectStartDate)
+                            {{-- BA Email + Project Start Date (only if not already filled) --}}
+                            <div id="ba-section"
+                                style="display: {{ isset($time_tracker_info) && $time_tracker_info->project_start_date ? 'none' : 'block' }};">
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-md-12 col-lg-2">
+                                            <label class="form-label mb-0 mt-2">BA Email <span
+                                                    class="text-danger">*</span></label>
+                                        </div>
+                                        <div class="col-md-12 col-lg-8">
+                                            <input type="email"
+                                                class="form-control @error('ba_email') is-invalid @enderror" name="ba_email"
+                                                value="{{ old('ba_email') }}"
+                                                placeholder="Enter Business Analyst email address">
+                                            <small class="text-muted">Email notification will be sent to this
+                                                address.</small>
+                                            @error('ba_email')
+                                                <span class="invalid-feedback"
+                                                    role="alert"><strong>{{ $message }}</strong></span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-md-12 col-lg-2">
+                                            <label class="form-label mb-0 mt-2">Project Start Date</label>
+                                        </div>
+                                        <div class="col-md-12 col-lg-8">
+                                            <input type="date"
+                                                class="form-control @error('project_start_date') is-invalid @enderror"
+                                                name="project_start_date"
+                                                value="{{ old('project_start_date', $time_tracker_info->project_start_date ?? '') }}"
+                                                readonly>
+                                            <small class="text-muted">This field will be filled by BA after email
+                                                notification.</small>
+                                            @error('project_start_date')
+                                                <span class="invalid-feedback"
+                                                    role="alert"><strong>{{ $message }}</strong></span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                    </div>
                 </div>
             </div>
-        </div>
     </div>
     <div class="card-footer">
         <button class="btn btn-primary" type="submit">Save</button>
@@ -288,7 +311,8 @@
                         $('#project_name').modal('hide');
                         var projectname = response.project_name;
                         var dropdown = $('select[name="project_name"]');
-                        var newOption = $('<option>').val(projectname.id).text(projectname.name);
+                        var newOption = $('<option>').val(projectname.id).text(projectname
+                            .name);
                         dropdown.prepend(newOption);
                         showSuccessToast(response.message);
                     },
@@ -315,6 +339,36 @@
                         console.log(error);
                     }
                 });
+            });
+        });
+        $(document).ready(function() {
+            $('.select2[name="project_name"]').on('change', function() {
+                var projectId = $(this).val();
+
+                if (projectId) {
+                    $.ajax({
+                        url: '/projects/' + projectId + '/start-date',
+                        type: 'GET',
+                        success: function(response) {
+                            if (response.exists) {
+                                // Hide BA section
+                                $('#ba-section').hide();
+
+                                // Also set the date (just for reference, though it's hidden now)
+                                $('input[name="project_start_date"]').val(response.start_date);
+                            } else {
+                                // Show BA section
+                                $('#ba-section').show();
+
+                                // Clear old value
+                                $('input[name="project_start_date"]').val('');
+                            }
+                        },
+                        error: function(err) {
+                            console.error(err);
+                        }
+                    });
+                }
             });
         });
     </script>

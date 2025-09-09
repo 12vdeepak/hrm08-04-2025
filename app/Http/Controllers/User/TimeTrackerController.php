@@ -27,6 +27,20 @@ class TimeTrackerController extends Controller
         return view('User.time_tracker.add', compact('project_names', 'job_names', 'showProjectStartDate'));
     }
 
+    public function getProjectStartDate($id)
+{
+    $timeTracker = \App\Models\TimeTracker::where('project_id', $id)
+        ->whereNotNull('project_start_date')
+        ->first();
+
+    return response()->json([
+        'exists' => $timeTracker ? true : false,
+        'start_date' => $timeTracker->project_start_date ?? null,
+    ]);
+}
+
+
+
     private function shouldShowProjectStartDate()
     {
         $user = auth()->user();
