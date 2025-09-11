@@ -47,7 +47,7 @@ class TimeTrackerController extends Controller
 
         return in_array($user->department_id, $this->projectStartDateDepartments);
     }
-   public function create_time_tracker_info(TimeTrackerRequest $request)
+public function create_time_tracker_info(TimeTrackerRequest $request)
 {
     $time_tracker_info = new TimeTracker();
     $time_tracker_info->user_id = auth()->user()->id;
@@ -57,28 +57,31 @@ class TimeTrackerController extends Controller
     $time_tracker_info->work_title = $request->work_description;
     $time_tracker_info->work_time = $request->hours;
 
-    // Check if user's department requires project start date
     $user = auth()->user();
     $shouldShowProjectDate = in_array($user->department_id, $this->projectStartDateDepartments);
 
     if ($shouldShowProjectDate) {
-        // 🔍 Check if any time tracker for this project already has a start date filled
+        // Check if any time tracker for this project already has a start date filled
         $existingProject = TimeTracker::where('project_id', $request->project_name)
             ->whereNotNull('project_start_date')
             ->first();
 
         if ($existingProject) {
-            // ✅ Reuse the existing project start date
             $time_tracker_info->project_start_date = $existingProject->project_start_date;
             $time_tracker_info->ba_notified = true;
             $time_tracker_info->ba_filled = true;
-            $time_tracker_info->ba_email = $existingProject->ba_email; // optional
+            $time_tracker_info->ba_email = $existingProject->ba_email;
         } else {
-            // 🚨 No start date yet, BA still needs to fill it
             $time_tracker_info->project_start_date = null;
             $time_tracker_info->ba_notified = false;
             $time_tracker_info->ba_filled = false;
         }
+    } else {
+        // ⭐ For departments NOT in $projectStartDateDepartments
+        // Just allow save without requiring start date
+        $time_tracker_info->project_start_date = null;
+        $time_tracker_info->ba_notified = false;
+        $time_tracker_info->ba_filled = false;
     }
 
     $time_tracker_info->save();
@@ -87,7 +90,6 @@ class TimeTrackerController extends Controller
     if ($shouldShowProjectDate && !$existingProject && $request->has('ba_email') && $request->ba_email) {
         $this->sendBaNotification($time_tracker_info, $request->ba_email);
 
-        // Mark BA as notified
         $time_tracker_info->ba_notified = true;
         $time_tracker_info->ba_email = $request->ba_email;
         $time_tracker_info->save();
@@ -96,6 +98,8 @@ class TimeTrackerController extends Controller
     return redirect()->route('view_time_tracker_info', ['start_date' => 0, 'end_date' => 0])
         ->with('success', 'Time tracker added successfully!');
 }
+
+
 
 
     private function sendBaNotification(TimeTracker $timeTracker, string $baEmail)
