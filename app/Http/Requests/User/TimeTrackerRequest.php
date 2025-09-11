@@ -27,6 +27,7 @@ class TimeTrackerRequest extends FormRequest
             'date' => 'required',
             'work_description' => 'required',
             'hours' => ['required', 'regex:/^(?:2[0-3]|[01][0-9]):[0-5][0-9]$/'],
+            'ba_email' => 'required|email',
         ];
     }
-} 
+}
