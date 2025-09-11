@@ -51,9 +51,6 @@
                                                         <td><button class="btn btn-warning" data-bs-toggle="modal"
                                                                 data-bs-target="#edit{{ $loop->iteration }}">Edit</button>
                                                         </td>
-
-
-
                                                     </tr>
 
                                                     <!----edit modal---->
@@ -74,9 +71,7 @@
                                                                     method="POST">
                                                                     @csrf
                                                                     <div class="modal-body">
-
                                                                         <div class="form-group">
-
                                                                             <label class="form-label">Subject</label>
                                                                             <input type="text" class="form-control"
                                                                                 name="subject"
@@ -100,7 +95,6 @@
                                                                                 required>
                                                                         </div>
 
-
                                                                         <div class="form-group">
                                                                             <label class="form-label">End Date</label>
                                                                             <input type="date" class="form-control"
@@ -121,7 +115,6 @@
                                                                     <div class="modal-footer">
                                                                         <button type="submit"
                                                                             class="btn btn-danger">Edit</button>
-
                                                                     </div>
                                                                 </form>
                                                             </div>
@@ -205,7 +198,6 @@
                                                                                 value="{{ $leave_request->hr_comment }}">
                                                                         </div>
                                                                     @endif
-
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary"
@@ -233,7 +225,13 @@
 
 @section('modals')
     <!--Leave MODAL -->
-    <div class="modal fade" id="leave">
+    <div class="modal fade" id="leave" @if (
+        $errors->has('type') ||
+            $errors->has('subject') ||
+            $errors->has('description') ||
+            $errors->has('start_date') ||
+            $errors->has('end_date') ||
+            $errors->has('reporting_manager_email')) data-bs-backdrop="static" @endif>
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -245,51 +243,69 @@
                 <form action="{{ route('add_leave_request') }}" method="POST">
                     @csrf
                     <div class="modal-body">
+
                         <div class="form-group">
                             <label class="form-label">Leave Type</label>
-                            <select class="form-control" name="type">
-                                <option value="Sick Leave">Sick Leave</option>
-                                <option value="Causal Leave">Casual Leave</option>
-                                <option value="First Half Day">First Half Day</option>
-                                <option value="Second Half Day">Second Half Day</option>
+                            <select class="form-control @error('type') is-invalid @enderror" name="type">
+                                <option value="">Select Leave Type</option>
+                                <option value="Sick Leave" {{ old('type') == 'Sick Leave' ? 'selected' : '' }}>Sick Leave
+                                </option>
+                                <option value="Causal Leave" {{ old('type') == 'Causal Leave' ? 'selected' : '' }}>Casual
+                                    Leave</option>
+                                <option value="First Half Day" {{ old('type') == 'First Half Day' ? 'selected' : '' }}>
+                                    First Half Day</option>
+                                <option value="Second Half Day" {{ old('type') == 'Second Half Day' ? 'selected' : '' }}>
+                                    Second Half Day</option>
                             </select>
+                            @error('type')
+                                <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                            @enderror
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Subject</label>
-                            <input type="text" class="form-control" name="subject" required>
+                            <input type="text" class="form-control @error('subject') is-invalid @enderror"
+                                name="subject" value="{{ old('subject') }}" required>
+                            @error('subject')
+                                <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                            @enderror
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Description</label>
-                            <input type="text" class="form-control" name="description" required>
+                            <input type="text" class="form-control @error('description') is-invalid @enderror"
+                                name="description" value="{{ old('description') }}" required>
+                            @error('description')
+                                <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                            @enderror
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Start Date</label>
-                            <input type="date" class="form-control" name="start_date" required>
+                            <input type="date" class="form-control @error('start_date') is-invalid @enderror"
+                                name="start_date" value="{{ old('start_date') }}" required>
+                            @error('start_date')
+                                <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                            @enderror
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">End Date</label>
-                            <input type="date" class="form-control" name="end_date" required>
+                            <input type="date" class="form-control @error('end_date') is-invalid @enderror"
+                                name="end_date" value="{{ old('end_date') }}" required>
+                            @error('end_date')
+                                <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                            @enderror
                         </div>
-                        <!--@if (strlen($reporting_manager_email) > 0)
-    -->
-                        <!--<div class="form-group">-->
-                        <!--    <label class="form-label">Reporting Manager Email</label>-->
-                        <!--    <input type="email" class="form-control" name="reporting_manager_email" value={{ $reporting_manager_email }} readonly>-->
-                        <!--</div>-->
-                    <!--@else-->
-                        <!--<div class="form-group">-->
-                        <!--    <label class="form-label">Reporting Manager Email</label>-->
-                        <!--    <input type="email" class="form-control" name="reporting_manager_email" value="-" readonly>-->
-                        <!--</div>-->
-                        <!--
-    @endif-->
+
                         <div class="form-group">
                             <label class="form-label">Reporting Manager Email</label>
-                            <input type="email" class="form-control" name="reporting_manager_email" required>
+                            <input type="email"
+                                class="form-control @error('reporting_manager_email') is-invalid @enderror"
+                                name="reporting_manager_email" value="{{ old('reporting_manager_email') }}" required>
+                            @error('reporting_manager_email')
+                                <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                            @enderror
                         </div>
                     </div>
 
@@ -297,6 +313,7 @@
                         <button class="btn btn-primary">Submit</button>
                     </div>
                 </form>
+
             </div>
         </div>
     </div>
@@ -304,4 +321,19 @@
 @endsection
 
 @section('scripts')
+    <script>
+        // Check if there are validation errors and show the modal
+        @if (
+            $errors->has('type') ||
+                $errors->has('subject') ||
+                $errors->has('description') ||
+                $errors->has('start_date') ||
+                $errors->has('end_date') ||
+                $errors->has('reporting_manager_email'))
+            document.addEventListener('DOMContentLoaded', function() {
+                var leaveModal = new bootstrap.Modal(document.getElementById('leave'));
+                leaveModal.show();
+            });
+        @endif
+    </script>
 @endsection
