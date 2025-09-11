@@ -61,6 +61,39 @@
                             </div>
                         </div>
 
+                        {{-- Project Type (only for certain departments) --}}
+                        @if ($showProjectStartDate)
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-md-12 col-lg-2">
+                                        <label class="form-label mb-0 mt-2">Project Type <span
+                                                class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-12 col-lg-8">
+                                        <select class="form-control @error('project_type') is-invalid @enderror"
+                                            name="project_type" id="project_type">
+                                            <option value="" {{ old('project_type') == '' ? 'selected' : '' }}>Select
+                                                Project Type</option>
+                                            <option value="development"
+                                                {{ old('project_type') == 'development' ? 'selected' : '' }}>Development
+                                            </option>
+                                            <option value="marketing"
+                                                {{ old('project_type') == 'marketing' ? 'selected' : '' }}>Marketing
+                                            </option>
+                                            <option value="support"
+                                                {{ old('project_type') == 'support' ? 'selected' : '' }}>Support</option>
+                                            <option value="meeting"
+                                                {{ old('project_type') == 'meeting' ? 'selected' : '' }}>Meeting</option>
+                                        </select>
+                                        @error('project_type')
+                                            <span class="invalid-feedback"
+                                                role="alert"><strong>{{ $message }}</strong></span>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         {{-- Job Name --}}
                         <div class="form-group">
                             <div class="row">
@@ -70,7 +103,8 @@
                                 <div class="col-md-12 col-lg-8">
                                     <select class="form-control @error('job_name') is-invalid @enderror select2"
                                         name="job_name" data-placeholder="Select">
-                                        <option value="" {{ old('job_name') == '' ? 'selected' : '' }}>Select</option>
+                                        <option value="" {{ old('job_name') == '' ? 'selected' : '' }}>Select
+                                        </option>
                                         @foreach ($job_names as $job_name)
                                             <option value="{{ $job_name->id }}"
                                                 {{ old('job_name') == $job_name->id ? 'selected' : '' }}>
@@ -148,9 +182,8 @@
                             </div>
                         </div>
 
-                        {{-- BA Email + Project Start Date (only for certain departments) --}}
+                        {{-- BA Email + Project Start Date (only for certain departments and conditions) --}}
                         @if ($showProjectStartDate)
-                            {{-- BA Email + Project Start Date (only if not already filled) --}}
                             <div id="ba-section"
                                 style="display: {{ isset($time_tracker_info) && $time_tracker_info->project_start_date ? 'none' : 'block' }};">
                                 <div class="form-group">
@@ -161,8 +194,8 @@
                                         </div>
                                         <div class="col-md-12 col-lg-8">
                                             <input type="email"
-                                                class="form-control @error('ba_email') is-invalid @enderror" name="ba_email"
-                                                value="{{ old('ba_email') }}"
+                                                class="form-control @error('ba_email') is-invalid @enderror"
+                                                name="ba_email" value="{{ old('ba_email') }}"
                                                 placeholder="Enter Business Analyst email address">
                                             <small class="text-muted">Email notification will be sent to this
                                                 address.</small>
@@ -271,15 +304,14 @@
             var rangeDiv = document.getElementById('range');
 
             if (value === '0') {
-                hoursDiv.style.display = 'block'; // Show the hours div
-                rangeDiv.style.display = 'none'; // Hide the range div
+                hoursDiv.style.display = 'block';
+                rangeDiv.style.display = 'none';
             } else if (value === '1') {
-                hoursDiv.style.display = 'none'; // Hide the hours div
-                rangeDiv.style.display = 'block'; // Show the range div
+                hoursDiv.style.display = 'none';
+                rangeDiv.style.display = 'block';
             }
         }
 
-        // Reusable function to show a toast notification
         function showSuccessToast(message) {
             var toastId = 'success-toast-' + Date.now();
             var toastHtml = `
@@ -300,6 +332,40 @@
                 $toast.remove();
             });
         }
+
+        // Function to check if BA section should be shown or hidden
+        function checkBaSectionVisibility() {
+            var projectId = $('select[name="project_name"]').val();
+            var projectType = $('#project_type').val();
+
+            // Hide BA section if:
+            // 1. Project type is marketing, support, or meeting
+            // 2. Project already has start date and project type is development
+            if (projectType === 'marketing' || projectType === 'support' || projectType === 'meeting') {
+                $('#ba-section').hide();
+            } else if (projectType === 'development' && projectId) {
+                // Check if project already has start date
+                $.ajax({
+                    url: '/projects/' + projectId + '/start-date',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.exists) {
+                            $('#ba-section').hide();
+                            $('input[name="project_start_date"]').val(response.start_date);
+                        } else {
+                            $('#ba-section').show();
+                            $('input[name="project_start_date"]').val('');
+                        }
+                    },
+                    error: function(err) {
+                        console.error(err);
+                    }
+                });
+            } else if (projectType === 'development') {
+                $('#ba-section').show();
+            }
+        }
+
         $(document).ready(function() {
             $('#projectname-form').on('submit', function(e) {
                 e.preventDefault();
@@ -321,6 +387,7 @@
                     }
                 });
             });
+
             $('#jobname-form').on('submit', function(e) {
                 e.preventDefault();
                 $.ajax({
@@ -340,36 +407,19 @@
                     }
                 });
             });
-        });
-        $(document).ready(function() {
+
+            // Handle project name change
             $('.select2[name="project_name"]').on('change', function() {
-                var projectId = $(this).val();
-
-                if (projectId) {
-                    $.ajax({
-                        url: '/projects/' + projectId + '/start-date',
-                        type: 'GET',
-                        success: function(response) {
-                            if (response.exists) {
-                                // Hide BA section
-                                $('#ba-section').hide();
-
-                                // Also set the date (just for reference, though it's hidden now)
-                                $('input[name="project_start_date"]').val(response.start_date);
-                            } else {
-                                // Show BA section
-                                $('#ba-section').show();
-
-                                // Clear old value
-                                $('input[name="project_start_date"]').val('');
-                            }
-                        },
-                        error: function(err) {
-                            console.error(err);
-                        }
-                    });
-                }
+                checkBaSectionVisibility();
             });
+
+            // Handle project type change
+            $('#project_type').on('change', function() {
+                checkBaSectionVisibility();
+            });
+
+            // Initial check on page load
+            checkBaSectionVisibility();
         });
     </script>
 @endsection

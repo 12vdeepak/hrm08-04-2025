@@ -71,6 +71,9 @@
                                                     <tr>
                                                         <th>SNo.</th>
                                                         <th>Project Name</th>
+                                                        @if ($shouldShowProjectDate)
+                                                            <th>Project Type</th>
+                                                        @endif
                                                         <th>Job Name</th>
                                                         <th>Work Description</th>
                                                         <th>Time</th>
@@ -86,24 +89,59 @@
                                                         <tr>
                                                             <td>{{ $loop->iteration }}</td>
                                                             <td>{{ $time_tracker_info->project->name }}</td>
+                                                            @if ($shouldShowProjectDate)
+                                                                <td>
+                                                                    @if ($time_tracker_info->project_type)
+                                                                        <span
+                                                                            class="badge
+                                @if ($time_tracker_info->project_type === 'development') badge-primary
+                                @elseif($time_tracker_info->project_type === 'marketing') badge-info
+                                @elseif($time_tracker_info->project_type === 'support') badge-warning
+                                @elseif($time_tracker_info->project_type === 'meeting') badge-secondary @endif">
+                                                                            {{ ucfirst($time_tracker_info->project_type) }}
+                                                                        </span>
+                                                                    @else
+                                                                        <span class="badge badge-light">Not Set</span>
+                                                                    @endif
+                                                                </td>
+                                                            @endif
                                                             <td>{{ $time_tracker_info->job->name }}</td>
                                                             <td>{{ $time_tracker_info->work_title }}</td>
                                                             <td>{{ $time_tracker_info->work_time }}</td>
                                                             @if ($shouldShowProjectDate)
                                                                 @php
-                                                                    $projectStartDate = \App\Models\TimeTracker::where(
-                                                                        'project_id',
-                                                                        $time_tracker_info->project_id,
-                                                                    )
-                                                                        ->whereNotNull('project_start_date')
-                                                                        ->orderBy('project_start_date', 'asc')
-                                                                        ->value('project_start_date');
+                                                                    $projectType = $time_tracker_info->project_type;
 
-                                                                    $projectCompleted = !empty($projectStartDate);
+                                                                    // For non-development projects, we don't need BA approval
+if (
+    in_array($projectType, [
+        'marketing',
+        'support',
+        'meeting',
+    ])
+) {
+    $projectStartDate = null;
+    $projectCompleted = true; // Consider these as "completed" since no BA approval needed
+    $showNotApplicable = true;
+} else {
+    // For development projects, check actual start date
+    $projectStartDate = \App\Models\TimeTracker::where(
+        'project_id',
+        $time_tracker_info->project_id,
+    )
+        ->whereNotNull('project_start_date')
+        ->orderBy('project_start_date', 'asc')
+        ->value('project_start_date');
+
+                                                                        $projectCompleted = !empty($projectStartDate);
+                                                                        $showNotApplicable = false;
+                                                                    }
                                                                 @endphp
 
                                                                 <td>
-                                                                    @if ($projectCompleted)
+                                                                    @if ($showNotApplicable)
+                                                                        <span class="badge badge-secondary">N/A</span>
+                                                                    @elseif ($projectCompleted)
                                                                         <span
                                                                             class="badge badge-success">{{ $projectStartDate }}</span>
                                                                     @else
@@ -111,7 +149,9 @@
                                                                     @endif
                                                                 </td>
                                                                 <td>
-                                                                    @if ($projectCompleted)
+                                                                    @if ($showNotApplicable)
+                                                                        <span class="badge badge-secondary">N/A</span>
+                                                                    @elseif ($projectCompleted)
                                                                         <span class="badge badge-success">Completed</span>
                                                                     @elseif ($time_tracker_info->ba_notified)
                                                                         <span class="badge badge-info">BA Notified</span>
@@ -152,13 +192,15 @@
                                                                     $totalMinutes,
                                                                 );
                                                             @endphp
-                                                            <td><a href="{{ route('edit_time_tracker_info', ['id' => $time_tracker_info]) }}"
-                                                                    class="btn btn-warning btn-sm"><i
-                                                                        class="feather feather-edit"></i></a>
+                                                            <td>
+                                                                <a href="{{ route('edit_time_tracker_info', ['id' => $time_tracker_info]) }}"
+                                                                    class="btn btn-warning btn-sm">
+                                                                    <i class="feather feather-edit"></i>
+                                                                </a>
                                                                 <a href="{{ route('delete_time_tracker_info', ['id' => $time_tracker_info]) }}"
-                                                                    class="btn btn-danger btn-sm"><i
-                                                                        class="feather feather-trash"></i></a>
-
+                                                                    class="btn btn-danger btn-sm">
+                                                                    <i class="feather feather-trash"></i>
+                                                                </a>
                                                             </td>
                                                         </tr>
                                                     @endforeach

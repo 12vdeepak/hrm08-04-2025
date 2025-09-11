@@ -60,25 +60,59 @@ public function create_time_tracker_info(TimeTrackerRequest $request)
     $user = auth()->user();
     $shouldShowProjectDate = in_array($user->department_id, $this->projectStartDateDepartments);
 
-    if ($shouldShowProjectDate) {
-        // Check if any time tracker for this project already has a start date filled
-        $existingProject = TimeTracker::where('project_id', $request->project_name)
-            ->whereNotNull('project_start_date')
-            ->first();
+    // Add project type if provided
+    if ($shouldShowProjectDate && $request->has('project_type')) {
+        $time_tracker_info->project_type = $request->project_type;
+    }
 
-        if ($existingProject) {
-            $time_tracker_info->project_start_date = $existingProject->project_start_date;
-            $time_tracker_info->ba_notified = true;
-            $time_tracker_info->ba_filled = true;
-            $time_tracker_info->ba_email = $existingProject->ba_email;
-        } else {
+    if ($shouldShowProjectDate) {
+        $projectType = $request->project_type;
+
+        // Check if project type is marketing, support, or meeting
+        if (in_array($projectType, ['marketing', 'support', 'meeting'])) {
+            // For these project types, don't require BA email or project start date
             $time_tracker_info->project_start_date = null;
             $time_tracker_info->ba_notified = false;
             $time_tracker_info->ba_filled = false;
+            $time_tracker_info->ba_email = null;
+        } else if ($projectType === 'development') {
+            // For development projects, check if project already has a start date
+            $existingProject = TimeTracker::where('project_id', $request->project_name)
+                ->whereNotNull('project_start_date')
+                ->first();
+
+            if ($existingProject) {
+                // Project already has start date, use existing data
+                $time_tracker_info->project_start_date = $existingProject->project_start_date;
+                $time_tracker_info->ba_notified = true;
+                $time_tracker_info->ba_filled = true;
+                $time_tracker_info->ba_email = $existingProject->ba_email;
+            } else {
+                // New development project, require BA email and will send notification
+                $time_tracker_info->project_start_date = null;
+                $time_tracker_info->ba_notified = false;
+                $time_tracker_info->ba_filled = false;
+                $time_tracker_info->ba_email = $request->ba_email;
+            }
+        } else {
+            // Default case (if no project type selected for development departments)
+            $existingProject = TimeTracker::where('project_id', $request->project_name)
+                ->whereNotNull('project_start_date')
+                ->first();
+
+            if ($existingProject) {
+                $time_tracker_info->project_start_date = $existingProject->project_start_date;
+                $time_tracker_info->ba_notified = true;
+                $time_tracker_info->ba_filled = true;
+                $time_tracker_info->ba_email = $existingProject->ba_email;
+            } else {
+                $time_tracker_info->project_start_date = null;
+                $time_tracker_info->ba_notified = false;
+                $time_tracker_info->ba_filled = false;
+            }
         }
     } else {
-        // ⭐ For departments NOT in $projectStartDateDepartments
-        // Just allow save without requiring start date
+        // For departments NOT in $projectStartDateDepartments
         $time_tracker_info->project_start_date = null;
         $time_tracker_info->ba_notified = false;
         $time_tracker_info->ba_filled = false;
@@ -87,11 +121,16 @@ public function create_time_tracker_info(TimeTrackerRequest $request)
     $time_tracker_info->save();
 
     // Send email to BA only if needed
-    if ($shouldShowProjectDate && !$existingProject && $request->has('ba_email') && $request->ba_email) {
+    $needsNotification = $shouldShowProjectDate
+        && $projectType === 'development'
+        && !TimeTracker::where('project_id', $request->project_name)->whereNotNull('project_start_date')->exists()
+        && $request->has('ba_email')
+        && $request->ba_email;
+
+    if ($needsNotification) {
         $this->sendBaNotification($time_tracker_info, $request->ba_email);
 
         $time_tracker_info->ba_notified = true;
-        $time_tracker_info->ba_email = $request->ba_email;
         $time_tracker_info->save();
     }
 
