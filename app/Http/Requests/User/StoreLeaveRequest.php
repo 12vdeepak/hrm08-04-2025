@@ -27,8 +27,8 @@ class StoreLeaveRequest extends FormRequest
                     }
                 },
             ],
-            'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
             'reporting_manager_email' => 'required|email',
         ];
     }
