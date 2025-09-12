@@ -12,20 +12,25 @@ use App\Notifications\LeaveNotification;
 use Illuminate\Support\Facades\Mail;
 use App\Jobs\SendLeaveEmail;
 use Exception;
+use App\Http\Requests\User\StoreLeaveRequest;
 
 class LeaveController extends Controller
 {
-   public function add_leave_request(Request $request)
+  public function add_leave_request(StoreLeaveRequest $request)
 {
+    // Get validated data directly from FormRequest
+    $validatedData = $request->validated();
+
+    // Save leave request
     $leave_request = new Leave();
     $leave_request->user_id = auth()->user()->id;
-    $leave_request->subject = $request->subject;
-    $leave_request->type = $request->type;
-    $leave_request->description = $request->description;
-    $leave_request->start_date = $request->start_date;
-    $leave_request->end_date = $request->end_date;
+    $leave_request->subject = $validatedData['subject'];
+    $leave_request->type = $validatedData['type'];
+    $leave_request->description = $validatedData['description'];
+    $leave_request->start_date = $validatedData['start_date'];
+    $leave_request->end_date = $validatedData['end_date'];
     $leave_request->status = "Requested";
-    $leave_request->reporting_manager_email = $request->reporting_manager_email;
+    $leave_request->reporting_manager_email = $validatedData['reporting_manager_email'];
     $leave_request->save();
 
     // Generate approval token
@@ -38,7 +43,7 @@ class LeaveController extends Controller
     }
 
     // Reporting manager email
-    $reporting_manager = $request->reporting_manager_email;
+    $reporting_manager = $validatedData['reporting_manager_email'];
 
     // HR emails
     $hr_emails = User::where('employee_type_id', 2)
@@ -56,26 +61,25 @@ class LeaveController extends Controller
     $all_cc_emails = array_merge($hr_emails, $additional_cc_emails);
 
     // Calculate duration
-    $start_date = \Carbon\Carbon::parse($request->start_date);
-    $end_date = \Carbon\Carbon::parse($request->end_date);
+    $start_date = \Carbon\Carbon::parse($validatedData['start_date']);
+    $end_date = \Carbon\Carbon::parse($validatedData['end_date']);
     $duration = $start_date->diffInDays($end_date) + 1;
 
     // Email details
-    $details = [
+     $details = [
         'body' => "New Leave Request from " . auth()->user()->name . " " . (auth()->user()->last_name ?? ''),
         'name' => auth()->user()->name . " " . (auth()->user()->last_name ?? ''),
         'employee_email' => auth()->user()->email,
         'employee_id' => auth()->user()->employee_id ?? 'EMP' . auth()->user()->id,
         'designation' => auth()->user()->designation ?? 'Employee',
         'contact' => auth()->user()->phone ?? '+1 (555) 123-4567',
-        'subject' => $request->subject,
-        'type' => $request->type,
-        'description' => $request->description,
-        'start_date' => $request->start_date,
-        'end_date' => $request->end_date,
+        'subject' => $validatedData['subject'],
+        'type' => $validatedData['type'],
+        'description' => $validatedData['description'],
+        'start_date' => $validatedData['start_date'],
+        'end_date' => $validatedData['end_date'],
         'duration' => $duration . ' day(s)',
         'status' => "Requested",
-        // Approval URLs
         'approve_url' => route('leave.approve', ['leave_id' => $leave_request->id, 'token' => $approval_token]),
         'disapprove_url' => route('leave.disapprove', ['leave_id' => $leave_request->id, 'token' => $approval_token]),
     ];
