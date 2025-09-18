@@ -1,4 +1,3 @@
-
 @extends('layouts.user_app')
 
 @section('styles')
@@ -14,7 +13,7 @@
     </div>
 
     <div class="row">
-        <form action="{{route('update_time_tracker_info',['time_tracker_info'=>$time_tracker_info])}}" method="POST">
+        <form action="{{ route('update_time_tracker_info', ['time_tracker_info' => $time_tracker_info]) }}" method="POST">
             @csrf
             <div class="col-md-12 ">
                 <div class="card">
@@ -31,9 +30,7 @@
                                         <option value="" label="Select"
                                             {{ old('project_name') == '' ? 'selected' : '' }}>Select</option>
                                         @foreach ($project_names as $project_name)
-                                            <option value="{{ $project_name->id }}"
-                                                @selected($time_tracker_info->project_id == $project_name->id ? 'selected' : '')
-                                                >
+                                            <option value="{{ $project_name->id }}" @selected($time_tracker_info->project_id == $project_name->id ? 'selected' : '')>
                                                 {{ $project_name->name }}</option>
                                         @endforeach
                                     </select>
@@ -73,6 +70,41 @@
                                 });
                             </script>
                         </div>
+
+                        @if ($shouldShowProjectDate)
+                            <div class="form-group">
+                                <div class="row">
+                                    <div class="col-md-12 col-lg-2">
+                                        <label class="form-label mb-0 mt-2">Project Type <span
+                                                class="text-danger">*</span></label>
+                                    </div>
+                                    <div class="col-md-12 col-lg-8">
+                                        <select class="form-control @error('project_type') is-invalid @enderror"
+                                            name="project_type" id="project_type">
+                                            <option value=""
+                                                {{ old('project_type', $time_tracker_info->project_type) == '' ? 'selected' : '' }}>
+                                                Select Project Type</option>
+                                            <option value="development"
+                                                {{ old('project_type', $time_tracker_info->project_type) == 'development' ? 'selected' : '' }}>
+                                                Development</option>
+                                            <option value="marketing"
+                                                {{ old('project_type', $time_tracker_info->project_type) == 'marketing' ? 'selected' : '' }}>
+                                                Marketing</option>
+                                            <option value="support"
+                                                {{ old('project_type', $time_tracker_info->project_type) == 'support' ? 'selected' : '' }}>
+                                                Support</option>
+                                            <option value="meeting"
+                                                {{ old('project_type', $time_tracker_info->project_type) == 'meeting' ? 'selected' : '' }}>
+                                                Meeting</option>
+                                        </select>
+                                        @error('project_type')
+                                            <span class="invalid-feedback"
+                                                role="alert"><strong>{{ $message }}</strong></span>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-md-12 col-lg-2">
@@ -82,12 +114,11 @@
                                     <select
                                         class="form-control @error('job_name') is-invalid @enderror custom-select select2 select2-hidden-accessible"
                                         data-placeholder="Select" tabindex="-1" aria-hidden="true" name="job_name">
-                                        <option value="" label="Select" {{ old('job_name') == '' ? 'selected' : '' }}>
+                                        <option value="" label="Select"
+                                            {{ old('job_name') == '' ? 'selected' : '' }}>
                                             Select</option>
                                         @foreach ($job_names as $job_name)
-                                            <option value="{{ $job_name->id }}"
-                                                @selected($time_tracker_info->job_id == $job_name->id ? 'selected':'')
-                                                >
+                                            <option value="{{ $job_name->id }}" @selected($time_tracker_info->job_id == $job_name->id ? 'selected' : '')>
                                                 {{ $job_name->name }}</option>
                                         @endforeach
                                     </select>
@@ -160,37 +191,92 @@
                                 </div>
                             </div>
                         </div>
-                        
-                          <div class="col-md-12 col-lg-8 mt-3">
-                                   
 
-                                  
 
-                                    <div class="col" id="hours"
-                                        style="display: {{ old('timelogTime') == 0 ? '' : 'none' }};">
-                                        <input type="text" name="hours"
-                                            class="form-control col-2 @error('hours') is-invalid @enderror"
-                                            value=" {{ $time_tracker_info->work_time }} ">
-                                        @error('hours')
-                                            <span class="invalid-feedback" role="alert">
-                                                <strong>{{ $message }}</strong>
-                                            </span>
-                                        @enderror
-                                    </div>
+                        <div class="col-md-12 col-lg-8 mt-3">
 
-                                    
 
-                                           
+
+
+                            <div class="col" id="hours"
+                                style="display: {{ old('timelogTime') == 0 ? '' : 'none' }};">
+                                <input type="text" name="hours"
+                                    class="form-control col-2 @error('hours') is-invalid @enderror"
+                                    value=" {{ $time_tracker_info->work_time }} ">
+                                @error('hours')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+
+
+
+
+                        </div>
+                        {{-- BA Email + Project Start Date (only for certain departments and conditions) --}}
+                        @if ($shouldShowProjectDate)
+                            <div id="ba-section"
+                                style="display: {{ (isset($time_tracker_info->project_type) && in_array($time_tracker_info->project_type, ['marketing', 'support', 'meeting'])) || ($time_tracker_info->project_start_date && $time_tracker_info->ba_filled) ? 'none' : 'block' }};">
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-md-12 col-lg-2">
+                                            <label class="form-label mb-0 mt-2">BA Email <span
+                                                    class="text-danger">*</span></label>
+                                        </div>
+                                        <div class="col-md-12 col-lg-8">
+                                            <input type="email"
+                                                class="form-control @error('ba_email') is-invalid @enderror"
+                                                name="ba_email"
+                                                value="{{ old('ba_email', $time_tracker_info->ba_email) }}"
+                                                placeholder="Enter Business Analyst email address">
+                                            <small class="text-muted">Email notification will be sent to this address if
+                                                changed.</small>
+                                            @error('ba_email')
+                                                <span class="invalid-feedback"
+                                                    role="alert"><strong>{{ $message }}</strong></span>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-md-12 col-lg-2">
+                                            <label class="form-label mb-0 mt-2">Project Start Date</label>
+                                        </div>
+                                        <div class="col-md-12 col-lg-8">
+                                            <input type="date"
+                                                class="form-control @error('project_start_date') is-invalid @enderror"
+                                                name="project_start_date"
+                                                value="{{ old('project_start_date', $time_tracker_info->project_start_date) }}"
+                                                {{ $time_tracker_info->ba_filled ? '' : 'readonly' }}>
+                                            <small class="text-muted">
+                                                @if ($time_tracker_info->ba_filled)
+                                                    You can update the project start date.
+                                                @else
+                                                    This field will be filled by BA after email notification.
+                                                @endif
+                                            </small>
+                                            @error('project_start_date')
+                                                <span class="invalid-feedback"
+                                                    role="alert"><strong>{{ $message }}</strong></span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                     </div>
                 </div>
             </div>
-            <div class="card-footer">
-                <button class="btn btn-primary" type="submit">Update</button>
-            </div>
-        </form>
+    </div>
+    </div>
+    <div class="card-footer">
+        <button class="btn btn-primary" type="submit">Update</button>
+    </div>
+    </form>
     </div>
 @endsection
 
@@ -264,5 +350,56 @@
                 rangeDiv.style.display = 'block'; // Show the range div
             }
         }
+    </script>
+    <script>
+        // Function to check if BA section should be shown or hidden
+        function checkBaSectionVisibility() {
+            var projectId = $('select[name="project_name"]').val();
+            var projectType = $('#project_type').val();
+
+            // Hide BA section if:
+            // 1. Project type is marketing, support, or meeting
+            // 2. Project already has start date and project type is development
+            if (projectType === 'marketing' || projectType === 'support' || projectType === 'meeting') {
+                $('#ba-section').hide();
+            } else if (projectType === 'development' && projectId) {
+                // Check if project already has start date
+                $.ajax({
+                    url: '/projects/' + projectId + '/start-date',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.exists) {
+                            $('#ba-section').hide();
+                            $('input[name="project_start_date"]').val(response.start_date);
+                        } else {
+                            $('#ba-section').show();
+                            if (!$('input[name="project_start_date"]').val()) {
+                                $('input[name="project_start_date"]').val('');
+                            }
+                        }
+                    },
+                    error: function(err) {
+                        console.error(err);
+                    }
+                });
+            } else if (projectType === 'development') {
+                $('#ba-section').show();
+            }
+        }
+
+        $(document).ready(function() {
+            // Handle project name change
+            $('.select2[name="project_name"]').on('change', function() {
+                checkBaSectionVisibility();
+            });
+
+            // Handle project type change
+            $('#project_type').on('change', function() {
+                checkBaSectionVisibility();
+            });
+
+            // Initial check on page load
+            checkBaSectionVisibility();
+        });
     </script>
 @endsection

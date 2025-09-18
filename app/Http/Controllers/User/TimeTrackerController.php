@@ -258,36 +258,126 @@ public function updateProjectStartDate(Request $request, TimeTracker $timeTracke
         return response()->json($response);
     }
 
-    public function edit_time_tracker_info(Request $request){
-        $project_names = ProjectName::where('user_id', auth()->user()->id)->get();
-        $job_names = JobName::where('user_id', auth()->user()->id)->get();
-        $user = auth()->user();
-        $shouldShowProjectDate = in_array($user->department_id, $this->projectStartDateDepartments);
-        $time_tracker_info = TimeTracker::find($request->id);
-        return view('User.time_tracker.edit', compact('time_tracker_info','project_names', 'job_names', 'shouldShowProjectDate'));
+   public function edit_time_tracker_info(Request $request)
+{
+    $project_names = ProjectName::where('user_id', auth()->user()->id)->get();
+    $job_names = JobName::where('user_id', auth()->user()->id)->get();
+    $user = auth()->user();
+    $shouldShowProjectDate = in_array($user->department_id, $this->projectStartDateDepartments);
+    $time_tracker_info = TimeTracker::find($request->id);
+
+    return view('User.time_tracker.edit', compact('time_tracker_info', 'project_names', 'job_names', 'shouldShowProjectDate'));
+}
+
+public function update_time_tracker_info(TimeTrackerRequest $request)
+{
+    $time_tracker_info = TimeTracker::find($request->time_tracker_info);
+    $time_tracker_info->user_id = auth()->user()->id;
+    $time_tracker_info->project_id = $request->project_name;
+    $time_tracker_info->job_id = $request->job_name;
+    $time_tracker_info->work_date = $request->date;
+    $time_tracker_info->work_title = $request->work_description;
+    $time_tracker_info->work_time = $request->hours;
+
+    $user = auth()->user();
+    $shouldShowProjectDate = in_array($user->department_id, $this->projectStartDateDepartments);
+
+    // Add project type if provided
+    if ($shouldShowProjectDate && $request->has('project_type')) {
+        $time_tracker_info->project_type = $request->project_type;
     }
 
-    public function update_time_tracker_info(TimeTrackerRequest $request){
-        $resultTime=0;
+    if ($shouldShowProjectDate) {
+        $projectType = $request->project_type;
 
+        // Check if project type is marketing, support, or meeting
+        if (in_array($projectType, ['marketing', 'support', 'meeting'])) {
+            // For these project types, don't require BA email or project start date
+            $time_tracker_info->project_start_date = null;
+            $time_tracker_info->ba_notified = false;
+            $time_tracker_info->ba_filled = false;
+            $time_tracker_info->ba_email = null;
+        } else if ($projectType === 'development') {
+            // For development projects, check if project already has a start date
+            $existingProject = TimeTracker::where('project_id', $request->project_name)
+                ->whereNotNull('project_start_date')
+                ->where('id', '!=', $request->time_tracker_info) // Exclude current record
+                ->first();
 
-        $time_tracker_info = TimeTracker::find($request->time_tracker_info);
-        $time_tracker_info->user_id = auth()->user()->id;
-        $time_tracker_info->project_id = $request->project_name;
-        $time_tracker_info->job_id = $request->job_name;
-        $time_tracker_info->work_date = $request->date;
-        $time_tracker_info->work_title = $request->work_description;
-        $time_tracker_info->work_time = $request->hours;
-        $user = auth()->user();
-            $shouldShowProjectDate = in_array($user->department_id, $this->projectStartDateDepartments);
-        if ($shouldShowProjectDate) {
-            $time_tracker_info->project_start_date = $request->project_start_date;
-            $time_tracker_info->ba_filled = true;
+            if ($existingProject) {
+                // Project already has start date, use existing data
+                $time_tracker_info->project_start_date = $existingProject->project_start_date;
+                $time_tracker_info->ba_notified = true;
+                $time_tracker_info->ba_filled = true;
+                $time_tracker_info->ba_email = $existingProject->ba_email;
+            } else {
+                // Check if current record has project start date or needs BA email
+                if ($request->has('ba_email') && $request->ba_email) {
+                    $time_tracker_info->ba_email = $request->ba_email;
+                    $time_tracker_info->ba_notified = false;
+                    $time_tracker_info->ba_filled = false;
+                } else if ($time_tracker_info->project_start_date) {
+                    // Keep existing project start date if already set
+                    $time_tracker_info->ba_filled = true;
+                }
+
+                // Update project start date if provided
+                if ($request->has('project_start_date') && $request->project_start_date) {
+                    $time_tracker_info->project_start_date = $request->project_start_date;
+                    $time_tracker_info->ba_filled = true;
+                }
+            }
+        } else {
+            // Default case (if no project type selected for development departments)
+            $existingProject = TimeTracker::where('project_id', $request->project_name)
+                ->whereNotNull('project_start_date')
+                ->where('id', '!=', $request->time_tracker_info) // Exclude current record
+                ->first();
+
+            if ($existingProject) {
+                $time_tracker_info->project_start_date = $existingProject->project_start_date;
+                $time_tracker_info->ba_notified = true;
+                $time_tracker_info->ba_filled = true;
+                $time_tracker_info->ba_email = $existingProject->ba_email;
+            } else {
+                // Keep existing values or set defaults
+                if (!$time_tracker_info->project_start_date) {
+                    $time_tracker_info->project_start_date = null;
+                    $time_tracker_info->ba_notified = false;
+                    $time_tracker_info->ba_filled = false;
+                }
+            }
         }
-        $time_tracker_info->save();
-        return redirect()->route('view_time_tracker_info', ['start_date' => 0, 'end_date' => 0])
-            ->with('success', 'Time tracker updated successfully!');
+    } else {
+        // For departments NOT in $projectStartDateDepartments
+        $time_tracker_info->project_start_date = null;
+        $time_tracker_info->ba_notified = false;
+        $time_tracker_info->ba_filled = false;
     }
+
+    $time_tracker_info->save();
+
+    // Send email to BA only if needed (for new development projects or when BA email is updated)
+    $needsNotification = $shouldShowProjectDate
+        && $request->project_type === 'development'
+        && $request->has('ba_email')
+        && $request->ba_email
+        && (!$time_tracker_info->ba_notified || $time_tracker_info->ba_email !== $request->ba_email)
+        && !TimeTracker::where('project_id', $request->project_name)
+                      ->whereNotNull('project_start_date')
+                      ->where('id', '!=', $request->time_tracker_info)
+                      ->exists();
+
+    if ($needsNotification) {
+        $this->sendBaNotification($time_tracker_info, $request->ba_email);
+
+        $time_tracker_info->ba_notified = true;
+        $time_tracker_info->save();
+    }
+
+    return redirect()->route('view_time_tracker_info', ['start_date' => 0, 'end_date' => 0])
+        ->with('success', 'Time tracker updated successfully!');
+}
      public function DeleteTimeTracker($id){
         $time_tracker_info = TimeTracker::find($id);
         $time_tracker_info->delete();
