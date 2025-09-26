@@ -113,7 +113,8 @@
                                                             @foreach ($time_tracker as $time_tracker_info)
                                                                 <tr>
                                                                     <td>{{ $loop->iteration }}</td>
-                                                                    <td>{{ $time_tracker_info->project?->name ?? 'N/A' }}</td>
+                                                                    <td>{{ $time_tracker_info->project?->name ?? 'N/A' }}
+                                                                    </td>
                                                                     <td>{{ $time_tracker_info->job?->name ?? 'N/A' }}</td>
                                                                     <td>{{ $time_tracker_info->work_title }}</td>
                                                                     <td>{{ $time_tracker_info->work_time }}</td>
@@ -216,6 +217,12 @@
                                                         <tr>
                                                             <th>SNo.</th>
                                                             <th>Project Name</th>
+                                                            @if (isset($showProjectStartDate) && $showProjectStartDate)
+                                                                <th>Project Start Date</th>
+                                                            @endif
+                                                            @if (isset($showProjectStartDate) && $showProjectStartDate)
+                                                                <th>Project Type</th>
+                                                            @endif
                                                             <th>Job Name</th>
                                                             <th>Work Description</th>
                                                             <th>Time</th>
@@ -228,6 +235,18 @@
                                                             <tr>
                                                                 <td>{{ $loop->iteration }}</td>
                                                                 <td>{{ $time_tracker_info->project?->name ?? 'N/A' }}</td>
+                                                                @if (isset($showProjectStartDate) && $showProjectStartDate)
+                                                                    <td>
+                                                                        {{ $time_tracker_info->project_start_date
+                                                                            ? date('d-m-Y', strtotime($time_tracker_info->project_start_date))
+                                                                            : 'N/A' }}
+                                                                    </td>
+                                                                @endif
+                                                                @if (isset($showProjectStartDate) && $showProjectStartDate)
+                                                                    <td>
+                                                                        {{ $time_tracker_info->project_type ? $time_tracker_info->project_type : 'N/A' }}
+                                                                    </td>
+                                                                @endif
                                                                 <td>{{ $time_tracker_info->job?->name ?? 'N/A' }}</td>
                                                                 <td>{{ $time_tracker_info->work_title }}</td>
                                                                 <td>{{ $time_tracker_info->work_time }}</td>

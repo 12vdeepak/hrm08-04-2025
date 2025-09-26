@@ -14,51 +14,75 @@ use Carbon\Carbon;
 class ViewTimeTrackerController extends Controller
 {
     public function view_employee_time_tracker($id, $start_date = null, $end_date = null)
-    {
-        if ($id == 0) {
-            $id = auth()->user()->id;
+{
+    if ($id == 0) {
+        $id = auth()->user()->id;
+    }
+    if ($start_date == 0 || $start_date == null) {
+        $today = date('Y-m-d');
+        $start_date = date('Y-m-01', strtotime($today));
+    }
+    if ($end_date == 0 || $end_date == null) {
+        $end_date = date('Y-m-d');
+    }
+
+    $projectStartDateDepartments = [62, 68, 70, 71, 73, 85];
+
+    if($id != 'all' || $id == null){
+        $user = User::find($id);
+        $raw_time_trackers = TimeTracker::where('user_id', $id)
+            ->whereDate('work_date', '>=', $start_date)
+            ->whereDate('work_date', '<=', $end_date)
+            ->orderBy('work_date', 'desc')
+            ->get();
+
+        $time_trackers = [];
+        foreach ($raw_time_trackers as $raw_time_tracker) {
+            $time_trackers[$raw_time_tracker->work_date][] = $raw_time_tracker;
         }
-        if ($start_date == 0 || $start_date == null) {
-            $today = date('Y-m-d');
-            $start_date = date('Y-m-01', strtotime($today));
-        }
-        if ($end_date == 0 || $end_date == null) {
-            $end_date = date('Y-m-d');
-        }
-        if($id != 'all' || $id == null){
-            $raw_time_trackers = TimeTracker::where('user_id', $id)->whereDate('work_date', '>=', $start_date)->whereDate('work_date', '<=', $end_date)->orderBy('work_date', 'desc')->get();
-            $time_trackers = array();
+
+        $name = $user->name . " " . $user->lastname;
+
+        $data = [
+            'time_trackers' => $time_trackers,
+        ];
+
+        $employees = User::where('role_id', '!=', 1)->where('employee_status',1)->get();
+
+        // ✅ check department
+        $showProjectStartDate = in_array($user->department_id, $projectStartDateDepartments);
+
+        return view('HR.view_time_tracker', compact(
+            'name','data', 'start_date', 'end_date', 'employees', 'id', 'showProjectStartDate'
+        ));
+    }
+    elseif($id == 'all'){
+        $data = [];
+        $employees = User::where('role_id', '!=', 1)->where('employee_status','1')->paginate(5);
+
+        foreach ($employees as $employee) {
+            $raw_time_trackers = TimeTracker::where('user_id', $employee->id)
+                ->whereDate('work_date', '>=', $start_date)
+                ->whereDate('work_date', '<=', $end_date)
+                ->orderBy('work_date', 'desc')
+                ->get();
+
+            $time_trackers = [];
             foreach ($raw_time_trackers as $raw_time_tracker) {
                 $time_trackers[$raw_time_tracker->work_date][] = $raw_time_tracker;
             }
-            $name= User::find($id)->name . " " . User::find($id)->lastname;
-            $data=[
-                'time_trackers'=>$time_trackers,
-            ];
-            //dd($data);
-            $employees = User::where('role_id', '!=', 1)->where('employee_status',1)->get();
-            return view('HR.view_time_tracker', compact('name','data', 'start_date', 'end_date', 'employees', 'id'));
-        }
-        elseif($id == 'all'){
-            $data=array();
-            $employees = User::where('role_id', '!=', 1)->where('employee_status','1')->paginate(5);
-            foreach ($employees as $employee) {
-                $raw_time_trackers = TimeTracker::where('user_id', $employee->id)->whereDate('work_date', '>=', $start_date)->whereDate('work_date', '<=', $end_date)->orderBy('work_date', 'desc')->get();
-                $time_trackers = array();
-                foreach ($raw_time_trackers as $raw_time_tracker) {
-                    $time_trackers[$raw_time_tracker->work_date][] = $raw_time_tracker;
-                }
-                $data[]=[
-                    'name'=> $employee->name . " " . $employee->lastname,
-                    'time_trackers'=>$time_trackers,
-                ];
 
-            }
-       
-            return view('HR.view_time_tracker', compact('data', 'start_date', 'end_date', 'employees', 'id'));
+            $data[] = [
+                'name'=> $employee->name . " " . $employee->lastname,
+                'time_trackers'=>$time_trackers,
+                'showProjectStartDate' => in_array($employee->department_id, $projectStartDateDepartments), // ✅ add flag
+            ];
         }
-        
+
+        return view('HR.view_time_tracker', compact('data', 'start_date', 'end_date', 'employees', 'id'));
     }
+}
+
 
     public function hr_add_time_tracker_info()
     {
@@ -190,10 +214,10 @@ class ViewTimeTrackerController extends Controller
         $time_tracker_info->save();
         return redirect()->route('view_employee_time_tracker', ['id' => 0, 'start_date' => 0, 'end_date' => 0]);
     }
-    
+
      public function hr_DeleteTimeTracker($id){
         $time_tracker_info = TimeTracker::find($id);
         $time_tracker_info->delete();
         return redirect()->route('view_employee_time_tracker', ['id' => 0, 'start_date' => 0, 'end_date' => 0]);
-    } 
+    }
 }
