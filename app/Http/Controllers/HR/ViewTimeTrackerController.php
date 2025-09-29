@@ -26,7 +26,7 @@ class ViewTimeTrackerController extends Controller
         $end_date = date('Y-m-d');
     }
 
-    $projectStartDateDepartments = [62,66, 68, 70, 71, 73, 85];
+    $projectStartDateDepartments = [62, 68, 70, 71, 73, 85];
 
     if($id != 'all' || $id == null){
         $user = User::find($id);
