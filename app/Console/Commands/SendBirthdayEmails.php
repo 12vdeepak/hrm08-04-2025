@@ -30,23 +30,33 @@ class SendBirthdayEmails extends Command
      *
      * @return int
      */
-    public function handle()
+  public function handle()
     {
         $today = Carbon::now()->format('m-d');
-        
+
         // Query users who have birthdays today and are active employees
         $birthdayUsers = User::whereRaw("DATE_FORMAT(date_of_birth, '%m-%d') = ?", [$today])
             ->where('employee_status', 1)
             ->get();
-            
+
         $this->info("Found {$birthdayUsers->count()} employees with birthdays today.");
-            
+
+        // Define CC email addresses (HR / Management)
+        $ccEmails = [
+            'hr@quantumitinnovation.com',
+            'Nitins28@gmail.com',
+            'vineet@quantumitinnovation.com',
+        ];
+
         foreach ($birthdayUsers as $user) {
-            // Send birthday email to each user
-            Mail::to($user->email)->send(new BirthdayWishes($user));
-            $this->info("Birthday email sent to {$user->name} ({$user->email})");
+            // Send birthday email with CC
+            Mail::to($user->email)
+                ->cc($ccEmails)
+                ->send(new BirthdayWishes($user));
+
+            $this->info("Birthday email sent to {$user->name} ({$user->email}) with CC to HR/Management.");
         }
-        
+
         return Command::SUCCESS;
     }
 }

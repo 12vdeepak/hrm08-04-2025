@@ -15,7 +15,7 @@ class SendFestivalGreetings extends Command
     protected $signature = 'festival:greet';
     protected $description = 'Send festival greeting emails to active employees one day before festivals';
 
-    public function handle()
+   public function handle()
     {
         $today = Carbon::today();
         $tomorrow = $today->copy()->addDay();
@@ -40,22 +40,44 @@ class SendFestivalGreetings extends Command
 
         $delaySeconds = 0;
 
+        // Define CC email addresses (HR / Management)
+        $ccEmails = [
+            'hr@quantumitinnovation.com',
+            'Nitins28@gmail.com',
+            'vineet@quantumitinnovation.com',
+        ];
+
         foreach ($festivals as $festival) {
             $this->info("Processing greetings for: {$festival->occasion} on {$festival->start_date}");
 
+            // 1️⃣ Send greetings to employees (without CC)
             foreach ($users as $user) {
-                // Queue the email with incremental delay
                 Mail::to($user->email)
-                    ->later(now()->addSeconds($delaySeconds), new FestivalGreetingMail($user, $festival));
+                    ->later(
+                        now()->addSeconds($delaySeconds),
+                        new FestivalGreetingMail($user, $festival)
+                    );
 
-                // Log the scheduled email
                 Log::info("Scheduled {$festival->occasion} greeting to {$user->email} (one day before)");
                 $this->line("→ Scheduled greeting to {$user->email}");
 
-                $delaySeconds += 2; // Add delay between emails to avoid SMTP rate limits
+                $delaySeconds += 2; // Add delay to avoid SMTP rate limits
             }
+
+            // 2️⃣ Send a single copy to HR/management
+            Mail::to($ccEmails)
+                ->later(
+                    now()->addSeconds($delaySeconds),
+                    new FestivalGreetingMail(null, $festival) // Send a general mail
+                );
+
+            Log::info("Sent single HR/CC greeting for {$festival->occasion}");
+            $this->line("→ Sent single HR/CC greeting for {$festival->occasion}");
+
+            $delaySeconds += 5; // Small extra delay between festivals
         }
 
-        $this->info('All festival greetings have been queued with delay. Make sure the queue worker is running!');
+        $this->info('All festival greetings have been queued. Make sure the queue worker is running!');
     }
+
 }
