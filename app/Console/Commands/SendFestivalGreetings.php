@@ -45,6 +45,7 @@ class SendFestivalGreetings extends Command
             'hr@quantumitinnovation.com',
             'Nitins28@gmail.com',
             'vineet@quantumitinnovation.com',
+            'nitin.quantumitinnovation@gmail.com',
         ];
 
         foreach ($festivals as $festival) {
