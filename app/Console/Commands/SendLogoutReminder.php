@@ -7,6 +7,7 @@ use DB;
 use Carbon\Carbon;
 use App\Models\Leave;
 use App\Models\CheckIn;
+use App\Models\Holiday;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\LogoutReminderMail;
 use App\Exports\PendingLogoutReportExport;
@@ -35,12 +36,23 @@ class SendLogoutReminder extends Command
     public function handle()
     {
         $today = Carbon::today();
-
+    
+        // Check if it's a weekend
         if ($today->isWeekend()) {
             $this->info('Weekend. No reminders sent.');
             return;
         }
-
+    
+        // Check if it's a holiday
+        $isHoliday = Holiday::where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->exists();
+        
+        if ($isHoliday) {
+            $this->info('Today is a holiday. No reminders sent.');
+            return;
+        }
+    
         if (now()->format('H:i') === '22:00') {
             // Get users who are on leave with status "Accepted By HR"
             $onLeaveUserIds = Leave::where('status', 'Accepted By HR')
@@ -48,13 +60,13 @@ class SendLogoutReminder extends Command
                 ->whereDate('end_date', '>=', $today)
                 ->pluck('user_id')
                 ->toArray();
-
+    
             // Get users who checked in today but have not logged out (end_time is null)
             $checkedInNotLoggedOutUserIds = CheckIn::whereDate('start_time', $today)
                 ->whereNull('end_time')
                 ->pluck('user_id')
                 ->toArray();
-
+    
             // Main query: active users only
             $usersToNotify = DB::table('users as u')
                 ->where('u.employee_status', 1)
@@ -63,14 +75,14 @@ class SendLogoutReminder extends Command
                 ->whereNotIn('u.id', $onLeaveUserIds)
                 ->select('u.id', 'u.name', 'u.lastname', 'u.email')
                 ->get();
-
+    
             foreach ($usersToNotify as $user) {
                 $fullName = $user->name . ' ' . $user->lastname;
                 // Queue the email
                 Mail::to($user->email)->queue(new LogoutReminderMail($fullName));
             }
         }
-
+    
         if (now()->format('H:i') === '23:00') {
             $pendingUsers = DB::table('check_ins as ci')
                 ->join('users as u', 'ci.user_id', '=', 'u.id')

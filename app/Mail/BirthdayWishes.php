@@ -42,8 +42,9 @@ class BirthdayWishes extends Mailable
         return $this->subject("Happy Birthday, {$this->user->name}!")
             ->view('emails.birthday')
             ->with([
-                'userName' => $this->user->name,
+                'name' => $this->user->name,
                 'companyName' => $companyName,
+                'birthday' => $this->user->date_of_birth,
             ]);
     }
 }

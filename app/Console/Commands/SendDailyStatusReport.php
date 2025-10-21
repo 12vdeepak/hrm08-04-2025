@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\User;
 use App\Models\CheckIn;
 use App\Models\Leave;
+use App\Models\Holiday;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Mail\DailyUserStatusReportMail;
@@ -19,8 +20,19 @@ class SendDailyStatusReport extends Command
     {
         $today = Carbon::today();
 
+        // Check if it's a weekend
         if ($today->isWeekend()) {
             $this->info("It's a weekend. Skipping report.");
+            return;
+        }
+
+        // Check if it's a holiday
+        $isHoliday = Holiday::where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->exists();
+        
+        if ($isHoliday) {
+            $this->info('Today is a holiday. No report sent.');
             return;
         }
 
