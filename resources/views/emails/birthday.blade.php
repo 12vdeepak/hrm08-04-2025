@@ -191,7 +191,7 @@
                 <h3>🎊 Today We Celebrate You!</h3>
                 <p>Your dedication, hard work, and positive spirit make our workplace brighter every day.</p>
                 <div class="date-highlight">
-                    📅 {{ \Carbon\Carbon::parse($birthday)->format('l, F j, Y') }}
+                    📅 {{ \Carbon\Carbon::parse($birthday)->format('l, F j') }}
                 </div>
                 <p style="margin-top: 15px; font-size: 14px;">
                     Thank you for being an invaluable part of our team. We're so grateful to have you with us!
