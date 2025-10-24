@@ -29,9 +29,10 @@
 
         .festival-image {
             width: 100%;
-            height: 350px;
-            object-fit: cover;
+            height: auto;
+            object-fit: contain;
             display: block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .content-section {
@@ -162,11 +163,11 @@
     
             // Diwali variations
             if (strpos($name, 'diwali') !== false || strpos($name, 'deepavali') !== false) {
-                return ['icon' => '🪔', 'theme' => 'diwali', 'image' => 'Diwali.jfif'];
+                return ['icon' => '🪔', 'theme' => 'diwali', 'image' => 'Diwali.gif'];
             }
             // Holi variations
             if (strpos($name, 'holi') !== false || strpos($name, 'rangwali') !== false) {
-                return ['icon' => '🎨', 'theme' => 'holi', 'image' => 'Holi.jpg'];
+                return ['icon' => '🎨', 'theme' => 'holi', 'image' => 'Holi.gif'];
             }
             // Christmas variations
             if (strpos($name, 'christmas') !== false || strpos($name, 'xmas') !== false) {
@@ -174,7 +175,7 @@
             }
             // New Year variations
             if (strpos($name, 'new year') !== false || strpos($name, 'newyear') !== false) {
-                return ['icon' => '🎊', 'theme' => 'newyear', 'image' => 'Newyear.jfif'];
+                return ['icon' => '🎊', 'theme' => 'newyear', 'image' => 'Newyear.gif'];
             }
             // Eid variations
             if (strpos($name, 'eid') !== false || strpos($name, 'ramadan') !== false || strpos($name, 'bakrid') !== false) {
@@ -190,27 +191,27 @@
             }
             // Janmashtami
             if (strpos($name, 'janmashtami') !== false || strpos($name, 'krishna') !== false) {
-                return ['icon' => '🦚', 'theme' => 'default', 'image' => 'Janmaashtmi.jfif'];
+                return ['icon' => '🦚', 'theme' => 'default', 'image' => 'Janmaashtmi.gif'];
             }
             // Raksha Bandhan
             if (strpos($name, 'rakshabandan') !== false || strpos($name, 'rakhi') !== false || strpos($name, 'raksha bandhan') !== false) {
-                return ['icon' => '🎀', 'theme' => 'default', 'image' => 'RakshaBandan.jfif'];
+                return ['icon' => '🎀', 'theme' => 'default', 'image' => 'RakshaBandan.gif'];
             }
             // Bhai Dooj
             if (strpos($name, 'bhai dooj') !== false || strpos($name, 'bhaidooj') !== false || strpos($name, 'bhai duj') !== false) {
-                return ['icon' => '👫', 'theme' => 'default', 'image' => 'Bhaidooj.jfif'];
+                return ['icon' => '👫', 'theme' => 'default', 'image' => 'Bhaidooj.gif'];
             }
             // Independence Day
             if (strpos($name, 'independence') !== false) {
-                return ['icon' => '🇮🇳', 'theme' => 'default', 'image' => 'Independence.jfif'];
+                return ['icon' => '🇮🇳', 'theme' => 'default', 'image' => 'Independence.gif'];
             }
             // Republic Day
             if (strpos($name, 'republic') !== false) {
-                return ['icon' => '🇮🇳', 'theme' => 'default', 'image' => 'Republic.jfif'];
+                return ['icon' => '🇮🇳', 'theme' => 'default', 'image' => 'Republic.gif'];
             }
             // Gandhi Jayanti
             if (strpos($name, 'gandhi') !== false) {
-                return ['icon' => '🕊️', 'theme' => 'default', 'image' => 'Gandhi.jfif'];
+                return ['icon' => '🕊️', 'theme' => 'default', 'image' => 'Gandhi_jayanti.gif'];
             }
             // Maha Shivratri
             if (strpos($name, 'mahashivratri') !== false || strpos($name, 'shivaratri') !== false || strpos($name, 'shivratri') !== false) {

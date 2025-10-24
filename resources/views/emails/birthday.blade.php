@@ -29,9 +29,10 @@
 
         .birthday-image {
             width: 100%;
-            height: 350px;
-            object-fit: cover;
+            height: auto;
+            object-fit: contain;
             display: block;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
         .content-section {
@@ -170,18 +171,18 @@
         <div class="festive-border"></div>
 
         <!-- Birthday Image -->
-        <img src="{{ asset('images/birthday/birthday.jpg') }}" alt="Happy Birthday" class="birthday-image">
+        <img src="{{ asset('images/birthday/HBD.gif') }}" alt="Happy Birthday" class="birthday-image">
 
         <div class="content-section">
             <div class="birthday-icon">🎂🎉🎈</div>
-            
+
             <div class="greeting">
                 Happy Birthday, <span class="name-highlight">{{ $name }}</span>!
             </div>
 
             <div class="message-text">
-                On this special day, the entire team at <strong>{{ $companyName }}</strong> 
-                wants to celebrate YOU! May your birthday be filled with laughter, joy, 
+                On this special day, the entire team at <strong>{{ $companyName }}</strong>
+                wants to celebrate YOU! May your birthday be filled with laughter, joy,
                 and countless beautiful moments that you'll cherish forever.
             </div>
 
@@ -200,8 +201,8 @@
 
             <div class="wishes-section">
                 <div class="wishes-text">
-                    May this year bring you success in everything you do, 
-                    adventures that excite you, and moments that make you smile. 
+                    May this year bring you success in everything you do,
+                    adventures that excite you, and moments that make you smile.
                     Here's to another year of achieving great things together! 🌟
                 </div>
             </div>
