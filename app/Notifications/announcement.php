@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class announcement extends Notification
+class announcement extends Notification implements ShouldQueue
 {
     use Queueable;
     public $announcement;
@@ -34,10 +34,14 @@ class announcement extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $subject = (string) ($this->announcement->title ?? 'Announcement');
+        $body = (string) ($this->announcement->announcement ?? '');
+
         return (new MailMessage)
-                    ->line('The introduction to the notification.')
-                    ->action('Notification Action', url('/'))
-                    ->line('Thank you for using our application!');
+            ->subject($subject)
+            ->greeting('Hello!')
+            ->line(strip_tags($body))
+            ->action('View Announcement', url('/'));
     }
 
     /**
@@ -51,7 +55,7 @@ class announcement extends Notification
             'notification_type' => "announcement",
             'notification_id' => $this->announcement->id,
             'title' => $this->announcement->title,
-            'description' => $this->announcement->description,
+            'announcement' => $this->announcement->announcement,
             'department' => $this->announcement->department,
         ];
     }

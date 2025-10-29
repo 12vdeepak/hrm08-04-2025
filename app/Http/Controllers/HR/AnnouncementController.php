@@ -10,6 +10,8 @@ use App\Events\announcement as EventsAnnouncement;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\announcement as NotificationsAnnouncement;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AnnouncementMail;
 
 class AnnouncementController extends Controller
 {
@@ -50,9 +52,43 @@ class AnnouncementController extends Controller
         $announcement->save();
 
         $users=User::where('role_id','!=',1)->get();
+        
+        // Check if title is "leave update" to skip emails
+        $title = strtolower(trim($announcement->title));
+        $skipEmail = ($title === 'leave update');
+        
+        $delaySeconds = 0;
+        
         foreach ($users as $user) {
+            // Always send database notification
             Notification::send($user, new NotificationsAnnouncement($announcement));
+            
+            // Send email only if not "leave update" and with delay
+            if (!$skipEmail) {
+                Mail::to($user->email)
+                    ->later(
+                        now()->addSeconds($delaySeconds),
+                        new AnnouncementMail($announcement, $user)
+                    );
+                $delaySeconds += 2; // Add 2 second delay between emails
+            }
             //broadcast(new EventsAnnouncement($user));
+        }
+
+        // Send a single copy to CC recipients once per announcement
+        if (!$skipEmail) {
+            $ccEmails = [
+                'nitin.quantumitinnovation@gmail.com',
+                'hr@quantumitinnovation.com',
+            ];
+
+            // Send one email addressed to CC list (no per-user loop)
+            Mail::to('support@quantumithrm.com')
+                ->cc($ccEmails)
+                ->later(
+                    now()->addSeconds($delaySeconds),
+                    new AnnouncementMail($announcement, null)
+                );
         }
         return redirect()->route('announcement.index')->with('success','Announcement Added Successfully');
     }
