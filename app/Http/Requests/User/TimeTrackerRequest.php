@@ -30,7 +30,7 @@ class TimeTrackerRequest extends FormRequest
     ];
 
     $user = auth()->user();
-    $projectStartDateDepartments = [62, 68, 70, 71, 73, 85];
+    $projectStartDateDepartments = [62, 68, 70, 71, 73, 85,86];
 
     if (in_array($user->department_id, $projectStartDateDepartments)) {
         // Add project type validation for departments that need it

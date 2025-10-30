@@ -65,6 +65,12 @@ Route::post('/ba/update-project-date/{timeTracker}', [TimeTrackerController::cla
    Route::get('/projects/{id}/start-date', [TimeTrackerController::class, 'getProjectStartDate'])
     ->name('projects.start-date');
 
+// BA End Date routes
+Route::get('/ba/update-project-end-date/{timeTracker}', [TimeTrackerController::class, 'showUpdateEndDateForm'])
+    ->name('ba.update.project.enddate.form');
+Route::post('/ba/update-project-end-date/{timeTracker}', [TimeTrackerController::class, 'updateProjectEndDate'])
+    ->name('ba.update.project.enddate');
+
 
 
 

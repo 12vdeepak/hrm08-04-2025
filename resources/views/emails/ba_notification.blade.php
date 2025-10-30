@@ -84,6 +84,12 @@
                 Update Project Start Date
             </a>
 
+            <p style="margin-top:22px;">If you also need to specify the project end date (now or later), use the link below:</p>
+            <a href="{{ route('ba.update.project.enddate.form', ['timeTracker' => $timeTracker->id]) }}"
+                style="background:#6c757d;color:#fff;padding:12px 16px;border-radius:4px;text-decoration:none;display:inline-block;">
+                Update Project End Date
+            </a>
+
 
 
         </div>

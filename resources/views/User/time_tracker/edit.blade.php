@@ -214,7 +214,7 @@
 
 
                         </div>
-                        {{-- BA Email + Project Start Date (only for certain departments and conditions) --}}
+                        {{-- BA Email + Project Dates (only for certain departments and conditions) --}}
                         @if ($shouldShowProjectDate)
                             <div id="ba-section"
                                 style="display: {{ (isset($time_tracker_info->project_type) && in_array($time_tracker_info->project_type, ['marketing', 'support', 'meeting'])) || ($time_tracker_info->project_start_date && $time_tracker_info->ba_filled) ? 'none' : 'block' }};">
@@ -259,6 +259,28 @@
                                                 @endif
                                             </small>
                                             @error('project_start_date')
+                                                <span class="invalid-feedback"
+                                                    role="alert"><strong>{{ $message }}</strong></span>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-md-12 col-lg-2">
+                                            <label class="form-label mb-0 mt-2">Project End Date</label>
+                                        </div>
+                                        <div class="col-md-12 col-lg-8">
+                                            <input type="date"
+                                                class="form-control @error('project_end_date') is-invalid @enderror"
+                                                name="project_end_date"
+                                                value="{{ old('project_end_date', $time_tracker_info->project_end_date) }}"
+                                                readonly>
+                                            <small class="text-muted">
+                                                This field will be filled by BA.
+                                            </small>
+                                            @error('project_end_date')
                                                 <span class="invalid-feedback"
                                                     role="alert"><strong>{{ $message }}</strong></span>
                                             @enderror

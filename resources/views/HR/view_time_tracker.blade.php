@@ -219,6 +219,7 @@
                                                             <th>Project Name</th>
                                                             @if (isset($showProjectStartDate) && $showProjectStartDate)
                                                                 <th>Project Start Date</th>
+                                                                <th>Project End Date</th>
                                                             @endif
                                                             @if (isset($showProjectStartDate) && $showProjectStartDate)
                                                                 <th>Project Type</th>
@@ -239,6 +240,11 @@
                                                                     <td>
                                                                         {{ $time_tracker_info->project_start_date
                                                                             ? date('d-m-Y', strtotime($time_tracker_info->project_start_date))
+                                                                            : 'N/A' }}
+                                                                    </td>
+                                                                    <td>
+                                                                        {{ $time_tracker_info->project_end_date
+                                                                            ? date('d-m-Y', strtotime($time_tracker_info->project_end_date))
                                                                             : 'N/A' }}
                                                                     </td>
                                                                 @endif

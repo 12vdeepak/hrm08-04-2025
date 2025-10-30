@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 class TimeTrackerController extends Controller
 {
-    private $projectStartDateDepartments = [62, 68, 70, 71,73, 85];
+    private $projectStartDateDepartments = [62, 68, 70, 71,73, 85,86];
 
     public function add_time_tracker_info()
     {
@@ -201,6 +201,39 @@ public function updateProjectStartDate(Request $request, TimeTracker $timeTracke
     return redirect()
             ->route('ba.update.project.date.form', $timeTracker)
         ->with('success', 'Project start date updated successfully.');
+}
+
+public function showUpdateEndDateForm(TimeTracker $timeTracker)
+{
+    if ($timeTracker->project_end_date) {
+        return view('emails.ba.update-project-end-date', [
+            'timeTracker' => $timeTracker,
+            'alreadySet'  => true
+        ]);
+    }
+
+    return view('emails.ba.update-project-end-date', [
+        'timeTracker' => $timeTracker,
+        'alreadySet'  => false
+    ]);
+}
+
+public function updateProjectEndDate(Request $request, TimeTracker $timeTracker)
+{
+    $validated = $request->validate([
+        'project_end_date' => ['required', 'date'],
+    ]);
+
+    if ($timeTracker->project_end_date) {
+        return back()->with('info', 'Project end date is already set.');
+    }
+
+    $timeTracker->project_end_date = $validated['project_end_date'];
+    $timeTracker->save();
+
+    return redirect()
+        ->route('ba.update.project.enddate.form', $timeTracker)
+        ->with('success', 'Project end date updated successfully.');
 }
 
     public function view_time_tracker_info($start_date, $end_date)

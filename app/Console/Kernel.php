@@ -26,6 +26,7 @@ class Kernel extends ConsoleKernel
          ->weekdays()
          ->at('23:00')->withoutOverlapping(); // Time tracker reminder
         $schedule->command('send:weekly-tracker-report')->fridays()->at('23:00'); // Weekly tracker report
+        $schedule->command('send:project-overdue-reminders')->fridays()->at('18:00'); // Overdue development projects reminder
         $schedule->command('report:weekly-late-checkins')->fridays()->at('20:00'); // Weekly late check-in report
         $schedule->command('send:daily-activity-tracker-report')->weekdays()->at('23:00'); // Daily activity tracker report for HR
         // $schedule->command('send:employee-activity-reminder')->weekdays()->at('22:30');
