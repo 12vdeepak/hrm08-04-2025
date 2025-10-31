@@ -39,6 +39,7 @@ class SendWeeklyReportReminder extends Command
             ->where('email', '!=', '')
             ->get();
         $remindersSent = 0;
+        $ccAdded = false; // ensure CC is added only once per run
 
         foreach ($activeUsers as $user) {
             $isOnLeaveFriday = Leave::where('user_id', $user->id)
@@ -50,10 +51,22 @@ class SendWeeklyReportReminder extends Command
             // Thursday: only send to users who will be absent Friday
             // Friday: only send to users not absent today
             if (($weekday === 'Thursday' && $isOnLeaveFriday)) {
-                Mail::to($user->email)->queue(new WeeklyReportReminder($user, true));
+                $mailable = new WeeklyReportReminder($user, true);
+                $mailer = Mail::to($user->email);
+                if (!$ccAdded) {
+                    $mailer->cc(['nitin@quantumitinnovation.com', 'hr@quantumitinnovation.com']);
+                    $ccAdded = true;
+                }
+                $mailer->queue($mailable);
                 $remindersSent++;
             } elseif ($weekday === 'Friday' && !$isOnLeaveFriday) {
-                Mail::to($user->email)->queue(new WeeklyReportReminder($user, false));
+                $mailable = new WeeklyReportReminder($user, false);
+                $mailer = Mail::to($user->email);
+                if (!$ccAdded) {
+                    $mailer->cc(['nitin@quantumitinnovation.com', 'hr@quantumitinnovation.com']);
+                    $ccAdded = true;
+                }
+                $mailer->queue($mailable);
                 $remindersSent++;
             }
         }

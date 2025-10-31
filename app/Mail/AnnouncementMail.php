@@ -39,13 +39,20 @@ class AnnouncementMail extends Mailable implements ShouldQueue
         $subject = $this->announcement->title ?? 'Announcement';
         $body = $this->announcement->announcement ?? '';
 
-        return $this->subject($subject)
-                    ->view('emails.announcement')
-                    ->with([
-                        'announcement' => $this->announcement,
-                        'user' => $this->user,
-                        'name' => $this->user ? $this->user->name : 'Team Quantum IT Innovation',
-                        'body' => strip_tags($body),
-                    ]);
+        $mailable = $this->subject($subject)
+                        ->view('emails.announcement')
+                        ->with([
+                            'announcement' => $this->announcement,
+                            'user' => $this->user,
+                            'name' => $this->user ? $this->user->name : 'Team Quantum IT Innovation',
+                            'body' => strip_tags($body),
+                        ]);
+
+        // Add CC only for a single/broadcast send (no specific user) to avoid duplicate CCs
+        if ($this->user === null) {
+            $mailable->cc(['nitin@quantumitinnovation.com', 'hr@quantumitinnovation.com']);
+        }
+
+        return $mailable;
     }
 }
