@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Google_Client;
-use Google_Service_Gmail;
-use Google_Service_Gmail_Message;
+use Google\Client as GoogleClient;
+use Google\Service\Gmail as GoogleGmailService;
+use Google\Service\Gmail\Message as GoogleGmailMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class GmailController extends Controller
 {
-    protected function buildGoogleClient(): Google_Client
+    protected function buildGoogleClient(): GoogleClient
     {
-        $client = new Google_Client();
+        $client = new GoogleClient();
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->setRedirectUri(config('services.google.redirect'));
@@ -21,8 +21,8 @@ class GmailController extends Controller
         $client->setApprovalPrompt('force');
         $client->setIncludeGrantedScopes(true);
         $client->setScopes([
-            Google_Service_Gmail::GMAIL_READONLY,
-            Google_Service_Gmail::GMAIL_METADATA,
+            GoogleGmailService::GMAIL_READONLY,
+            GoogleGmailService::GMAIL_METADATA,
         ]);
 
         $tokenPath = $this->getUserTokenPath();
@@ -83,15 +83,23 @@ class GmailController extends Controller
         if (!$client->getAccessToken()) {
             return redirect()->route('gmail.connect');
         }
-
-        $service = new Google_Service_Gmail($client);
-
+    
+        $service = new GoogleGmailService($client);
+    
         $messages = [];
-        $list = $service->users_messages->listUsersMessages('me', [
-            'maxResults' => 10,
+        $pageToken = $request->get('pageToken');
+        
+        $listParams = [
+            'maxResults' => 20,
             'q' => $request->get('q', ''),
-        ]);
-
+        ];
+        
+        if ($pageToken) {
+            $listParams['pageToken'] = $pageToken;
+        }
+        
+        $list = $service->users_messages->listUsersMessages('me', $listParams);
+    
         foreach ($list->getMessages() ?? [] as $messageRef) {
             $full = $service->users_messages->get('me', $messageRef->getId(), ['format' => 'metadata', 'metadataHeaders' => ['Subject', 'From', 'Date']]);
             $headers = collect($full->getPayload()->getHeaders() ?? [])->keyBy(fn($h) => $h->getName());
@@ -103,9 +111,11 @@ class GmailController extends Controller
                 'date' => optional($headers->get('Date'))->getValue(),
             ];
         }
-
+    
         return view('gmail.inbox', [
             'messages' => $messages,
+            'nextPageToken' => $list->getNextPageToken(),
+            'prevPageToken' => $pageToken,
         ]);
     }
 }

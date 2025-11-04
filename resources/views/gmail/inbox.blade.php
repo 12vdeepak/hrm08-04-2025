@@ -26,9 +26,15 @@
         @endforelse
     </div>
 
-    <div class="mt-3">
-        <a class="btn btn-secondary" href="{{ route('gmail.connect') }}">Reconnect</a>
-    </div>
+   <div class="mt-3 d-flex justify-content-between">
+    <a class="btn btn-secondary" href="{{ route('gmail.connect') }}">Reconnect</a>
+    
+    @if(isset($nextPageToken))
+        <a class="btn btn-primary" href="{{ route('gmail.inbox', array_merge(request()->all(), ['pageToken' => $nextPageToken])) }}">
+            Next Page →
+        </a>
+    @endif
+</div>
 </div>
 @endsection
 
