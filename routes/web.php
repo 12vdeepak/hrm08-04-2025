@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\SuperAdmin\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\User\TimeTrackerController;
+use App\Http\Controllers\GmailController;
 
 
 /*
@@ -76,3 +77,10 @@ Route::post('/ba/update-project-end-date/{timeTracker}', [TimeTrackerController:
 
 
 
+
+// Gmail integration
+Route::middleware(['auth'])->group(function () {
+    Route::get('/gmail/connect', [GmailController::class, 'connect'])->name('gmail.connect');
+    Route::get('/gmail/callback', [GmailController::class, 'callback'])->name('gmail.callback');
+    Route::get('/gmail/inbox', [GmailController::class, 'inbox'])->name('gmail.inbox');
+});
