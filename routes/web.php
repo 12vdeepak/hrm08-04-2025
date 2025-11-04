@@ -78,9 +78,3 @@ Route::post('/ba/update-project-end-date/{timeTracker}', [TimeTrackerController:
 
 
 
-// Gmail integration
-Route::middleware(['auth'])->group(function () {
-    Route::get('/gmail/connect', [GmailController::class, 'connect'])->name('gmail.connect');
-    Route::get('/gmail/callback', [GmailController::class, 'callback'])->name('gmail.callback');
-    Route::get('/gmail/inbox', [GmailController::class, 'inbox'])->name('gmail.inbox');
-});
