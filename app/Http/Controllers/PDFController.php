@@ -214,7 +214,7 @@ class PDFController extends Controller
                 $time_trackers = array();
                 foreach ($raw_time_trackers as $raw_time_tracker) {
                     $time_trackers[$raw_time_tracker->work_date][] = $raw_time_tracker;
-                    $count++;   
+                    $count++;
                 }
                 $users[] = [
                     'name' => $employee->name . " " . $employee->lastname,
@@ -255,7 +255,7 @@ class PDFController extends Controller
     // }
 
       public function generateAttendanceReport($user_id, $month, $year){
-       
+
         // Get the first date of the month
         $start_date = date('Y-m-01', strtotime("$year-$month-01"));
 
@@ -302,8 +302,8 @@ class PDFController extends Controller
              'date'=>date('Y-m-d'),
             'attendance_data' => $attendance_data->toArray(),
         ];
-        
-       
+
+
         //dd($data['attendance_data'][0]);
         //excel
        return Excel::download(new AttendanceData($data), Carbon::create()->month($month)->format('F') . "_" . $year . '_Attendance_Report.xlsx');
@@ -333,7 +333,7 @@ class PDFController extends Controller
             $checkins_data->push($data);
         }
         else{
-            $employees = User::where('role_id', '!=', 1)->where('employee_status', '!=', 'Left')->get();
+            $employees = User::where('role_id', '!=', 1)->where('employee_status', 1)->get();
             foreach ($employees as $employee) {
                 $details = [
                     'id' => $employee->id,
@@ -360,6 +360,6 @@ class PDFController extends Controller
        return Excel::download(new CheckinData($data), Carbon::create()->month($month)->format('F') . "_" . $year . '_Checkin_Report.xlsx');
         //pdf download
        // $pdf = PDF::loadView('pdfs.employee-monthly-checkins-report',$data)->setPaper('a3', 'landscape');
-        //return $pdf->download(Carbon::create()->month($month)->format('F') . "/" . $year . '_Attendance_Report.pdf');   
+        //return $pdf->download(Carbon::create()->month($month)->format('F') . "/" . $year . '_Attendance_Report.pdf');
     }
 }
