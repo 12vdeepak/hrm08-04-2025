@@ -29,7 +29,7 @@
                                     <i class="feather feather-clock"></i>
                                 </div>
                             </div><!-- input-group-prepend -->
-                            <input id="check_in_duration" type="text" class="form-control input-small">
+                            <input id="check_in_duration" type="text" class="form-control input-small" readonly>
                             <input id="timer" type="text" class="form-control input-small" hidden
                                 value={{ $response['time'] }}>
 
