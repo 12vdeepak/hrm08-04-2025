@@ -254,7 +254,7 @@
                                         </div>
                                         <div class="col-md-12 col-lg-8">
                                             <textarea class="form-control" name="status_reason" id="status_reason"
-                                                placeholder="Mention reason why project is still in progress" required></textarea>
+                                                placeholder="Mention reason why project is still in progress"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -375,6 +375,7 @@
             if (projectType === 'marketing' || projectType === 'support' || projectType === 'meeting') {
                 $('#ba-section').hide();
                 $('#overdue-section').hide();
+                $('#status_reason').attr('required', false);
             } else if (projectType === 'development' && projectId) {
                 // Check if project already has start date
                 $.ajax({
@@ -388,13 +389,18 @@
                             // Show overdue section if project is overdue
                             if (response.is_overdue) {
                                 $('#overdue-section').show();
+                                if ($('#project_status').val() === 'in_progress') {
+                                    $('#status_reason').attr('required', true);
+                                }
                             } else {
                                 $('#overdue-section').hide();
+                                $('#status_reason').attr('required', false);
                             }
                         } else {
                             $('#ba-section').show();
                             $('input[name="project_start_date"]').val('');
                             $('#overdue-section').hide();
+                            $('#status_reason').attr('required', false);
                         }
                     },
                     error: function(err) {
@@ -404,6 +410,7 @@
             } else if (projectType === 'development') {
                 $('#ba-section').show();
                 $('#overdue-section').hide();
+                $('#status_reason').attr('required', false);
             }
         }
 
