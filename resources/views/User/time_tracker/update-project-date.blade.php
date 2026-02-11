@@ -42,17 +42,16 @@
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-        .alert-info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
         .details-section {
             background-color: #f8f9fa;
             padding: 1rem;
             border-radius: 4px;
             margin-bottom: 1.5rem;
             border-left: 4px solid #007bff;
+        }
+        .details-section h5 {
+            margin-top: 0;
+            color: #666;
         }
         .form-group {
             margin-bottom: 1rem;
@@ -75,6 +74,14 @@
             border-color: #007bff;
             box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
         }
+        .is-invalid {
+            border-color: #dc3545;
+        }
+        .invalid-feedback {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
         .btn {
             display: inline-block;
             padding: 0.75rem 1.5rem;
@@ -85,12 +92,15 @@
             border: none;
             transition: background-color 0.2s;
         }
-        .btn-success {
-            background-color: #28a745;
+        .btn-primary {
+            background-color: #007bff;
             color: #fff;
         }
-        .btn-success:hover {
-            background-color: #218838;
+        .btn-primary:hover {
+            background-color: #0069d9;
+        }
+        .text-end {
+            text-align: right;
         }
         .text-danger {
             color: #dc3545;
@@ -103,45 +113,34 @@
             <h4 class="card-title">Update Project Start Date</h4>
         </div>
         <div class="card-body">
-            @if(session('success'))
+            @if (session('success'))
                 <div class="alert alert-success">
                     {{ session('success') }}
                 </div>
             @endif
 
-            @if(session('info'))
-                <div class="alert alert-info">
-                    {{ session('info') }}
-                </div>
-            @endif
-
             <div class="details-section">
+                <h5>Time Tracker Details</h5>
                 <p><strong>Employee:</strong> {{ $timeTracker->user->name }}</p>
                 <p><strong>Project:</strong> {{ $timeTracker->project?->name ?? 'N/A' }}</p>
+                <p><strong>Work Date:</strong> {{ $timeTracker->work_date }}</p>
+                <p><strong>Work Description:</strong> {{ $timeTracker->work_title }}</p>
             </div>
 
-            @if($alreadySet)
-                <div class="alert alert-info">
-                    <strong>Project start date is already set:</strong>
-                    {{ \Illuminate\Support\Carbon::parse($timeTracker->project_start_date)->toDateString() }}
-                    <p>This field is read-only.</p>
+            <form action="{{ route('ba.update.project.date', $timeTracker->id) }}" method="POST">
+                @csrf
+                <div class="form-group">
+                    <label>Project Start Date <span class="text-danger">*</span></label>
+                    <input type="date" name="project_start_date" class="form-control @error('project_start_date') is-invalid @enderror" value="{{ old('project_start_date', $timeTracker->project_start_date) }}" required>
+                    @error('project_start_date')
+                        <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                    @enderror
                 </div>
-            @else
-                <form action="{{ route('ba.update.project.date', $timeTracker->id) }}" method="POST">
-                    @csrf
-                    <div class="form-group">
-                        <label for="project_start_date">Project Start Date <span class="text-danger">*</span></label>
-                        <input type="date" id="project_start_date" name="project_start_date" class="form-control" required value="{{ old('project_start_date') }}">
-                        @error('project_start_date')
-                            <div class="text-danger" style="margin-top: 5px;">{{ $message }}</div>
-                        @enderror
-                    </div>
 
-                    <div style="text-align: right;">
-                        <button type="submit" class="btn btn-success">Save Start Date</button>
-                    </div>
-                </form>
-            @endif
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary">Update Start Date</button>
+                </div>
+            </form>
         </div>
     </div>
 </body>

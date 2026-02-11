@@ -57,7 +57,12 @@ require __DIR__.'/user.php';
 require __DIR__.'/hr.php';
 
 Route::get('/ba/update-project-date/{timeTracker}', [TimeTrackerController::class, 'showUpdateForm'])
-    ->name('ba.update.project.date.form'); // can add middleware if needed
+    ->name('ba.update.project.date.form');
+
+Route::get('/ba/update-new-deadline/{timeTracker}', [TimeTrackerController::class, 'showNewDeadlineForm'])
+    ->name('ba.update.new.deadline.form');
+Route::post('/ba/update-new-deadline/{timeTracker}', [TimeTrackerController::class, 'updateNewDeadline'])
+    ->name('ba.update.new.deadline');
 
 // Save the date (POST)
 Route::post('/ba/update-project-date/{timeTracker}', [TimeTrackerController::class, 'updateProjectStartDate'])
@@ -66,11 +71,6 @@ Route::post('/ba/update-project-date/{timeTracker}', [TimeTrackerController::cla
    Route::get('/projects/{id}/start-date', [TimeTrackerController::class, 'getProjectStartDate'])
     ->name('projects.start-date');
 
-// BA End Date routes
-Route::get('/ba/update-project-end-date/{timeTracker}', [TimeTrackerController::class, 'showUpdateEndDateForm'])
-    ->name('ba.update.project.enddate.form');
-Route::post('/ba/update-project-end-date/{timeTracker}', [TimeTrackerController::class, 'updateProjectEndDate'])
-    ->name('ba.update.project.enddate');
 
 
 

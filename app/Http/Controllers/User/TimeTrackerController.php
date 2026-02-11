@@ -11,6 +11,7 @@ use App\Http\Requests\User\TimeTrackerRequest;
 use App\Mail\ProjectStartDateNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 class TimeTrackerController extends Controller
 {
     private $projectStartDateDepartments = [62, 68, 70, 71,73, 85,86];
@@ -28,16 +29,35 @@ class TimeTrackerController extends Controller
     }
 
     public function getProjectStartDate($id)
-{
-    $timeTracker = \App\Models\TimeTracker::where('project_id', $id)
-        ->whereNotNull('project_start_date')
-        ->first();
+    {
+        $timeTracker = \App\Models\TimeTracker::where('project_id', $id)
+            ->whereNotNull('project_start_date')
+            ->orderBy('created_at', 'desc')
+            ->first();
 
-    return response()->json([
-        'exists' => $timeTracker ? true : false,
-        'start_date' => $timeTracker->project_start_date ?? null,
-    ]);
-}
+        $is_overdue = false;
+        if ($timeTracker && $timeTracker->project_start_date) {
+            $user = auth()->user();
+            
+            // Priority: Check new_deadline if it exists
+            if ($timeTracker->new_deadline) {
+                $deadline = Carbon::parse($timeTracker->new_deadline);
+                $is_overdue = Carbon::now()->greaterThan($deadline);
+            } else {
+                // Fallback: Check original start date + threshold
+                $thresholdMonths = ((int) $user->department_id === 86) ? 2 : 4;
+                $startDate = Carbon::parse($timeTracker->project_start_date);
+                $deadline = $startDate->copy()->addMonths($thresholdMonths);
+                $is_overdue = Carbon::now()->greaterThan($deadline);
+            }
+        }
+
+        return response()->json([
+            'exists' => $timeTracker ? true : false,
+            'start_date' => $timeTracker->project_start_date ?? null,
+            'is_overdue' => $is_overdue,
+        ]);
+    }
 
 
 
@@ -120,6 +140,43 @@ public function create_time_tracker_info(TimeTrackerRequest $request)
 
     $time_tracker_info->save();
 
+    // Save project status and reason if provided (for overdue projects)
+    if ($request->has('project_status')) {
+        $time_tracker_info->project_status = $request->project_status;
+        $time_tracker_info->status_reason = $request->status_reason;
+        
+        // --- PERSISTENT APPROVAL LOGIC ---
+        // Check if there is an existing approved/rejected decision for this project
+        $prevDecision = TimeTracker::where('project_id', $request->project_name)
+            ->where('user_id', auth()->user()->id)
+            ->whereNotNull('hr_status')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($prevDecision) {
+            $isOverdueAgainstNewDeadline = false;
+            if ($prevDecision->new_deadline) {
+                $isOverdueAgainstNewDeadline = Carbon::now()->greaterThan(Carbon::parse($prevDecision->new_deadline));
+            }
+
+            // If a decision exists and we haven't breached the NEW deadline yet, inherit the status
+            if (!$isOverdueAgainstNewDeadline) {
+                $time_tracker_info->hr_status = $prevDecision->hr_status;
+                $time_tracker_info->new_deadline = $prevDecision->new_deadline;
+                $time_tracker_info->ba_delay_reason = $prevDecision->ba_delay_reason;
+            } else {
+                // If we breached the new deadline, reset to pending for a new review cycle
+                $time_tracker_info->hr_status = 'pending';
+            }
+        } else {
+            // First time overdue, set to pending
+            $time_tracker_info->hr_status = 'pending';
+        }
+        // ---------------------------------
+
+        $time_tracker_info->save();
+    }
+
     // Send email to BA only if needed
     $needsNotification = $shouldShowProjectDate
         && $projectType === 'development'
@@ -167,74 +224,7 @@ public function create_time_tracker_info(TimeTrackerRequest $request)
     //     return response()->json(['success' => true, 'message' => 'Project start date updated successfully']);
     // }
 
-    public function showUpdateForm(TimeTracker $timeTracker)
-{
-    // Optional: block edits if already set
-    if ($timeTracker->project_start_date) {
-        return view('emails.ba.update-project-date', [
-            'timeTracker' => $timeTracker,
-            'alreadySet'  => true
-        ]);
-    }
 
-    return view('emails.ba.update-project-date', [
-        'timeTracker' => $timeTracker,
-        'alreadySet'  => false
-    ]);
-}
-
-public function updateProjectStartDate(Request $request, TimeTracker $timeTracker)
-{
-    $validated = $request->validate([
-        'project_start_date' => ['required', 'date'],
-    ]);
-
-    // Prevent double submit
-    if ($timeTracker->project_start_date) {
-        return back()->with('info', 'Project start date is already set.');
-    }
-
-    $timeTracker->project_start_date = $validated['project_start_date'];
-    $timeTracker->ba_filled = true; // requires column from Step 0
-    $timeTracker->save();
-
-    return redirect()
-            ->route('ba.update.project.date.form', $timeTracker)
-        ->with('success', 'Project start date updated successfully.');
-}
-
-public function showUpdateEndDateForm(TimeTracker $timeTracker)
-{
-    if ($timeTracker->project_end_date) {
-        return view('emails.ba.update-project-end-date', [
-            'timeTracker' => $timeTracker,
-            'alreadySet'  => true
-        ]);
-    }
-
-    return view('emails.ba.update-project-end-date', [
-        'timeTracker' => $timeTracker,
-        'alreadySet'  => false
-    ]);
-}
-
-public function updateProjectEndDate(Request $request, TimeTracker $timeTracker)
-{
-    $validated = $request->validate([
-        'project_end_date' => ['required', 'date'],
-    ]);
-
-    if ($timeTracker->project_end_date) {
-        return back()->with('info', 'Project end date is already set.');
-    }
-
-    $timeTracker->project_end_date = $validated['project_end_date'];
-    $timeTracker->save();
-
-    return redirect()
-        ->route('ba.update.project.enddate.form', $timeTracker)
-        ->with('success', 'Project end date updated successfully.');
-}
 
     public function view_time_tracker_info($start_date, $end_date)
     {
@@ -390,6 +380,46 @@ public function update_time_tracker_info(TimeTrackerRequest $request)
 
     $time_tracker_info->save();
 
+    // Save project status and reason if provided (for overdue projects)
+    if ($request->has('project_status')) {
+        $time_tracker_info->project_status = $request->project_status;
+        $time_tracker_info->status_reason = $request->status_reason;
+
+        // --- PERSISTENT APPROVAL LOGIC ---
+        // Check for an existing decision for this project (excluding current if updating)
+        $prevDecision = TimeTracker::where('project_id', $request->project_name)
+            ->where('user_id', auth()->user()->id)
+            ->whereNotNull('hr_status')
+            ->where('id', '!=', $time_tracker_info->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($prevDecision) {
+            $isOverdueAgainstNewDeadline = false;
+            if ($prevDecision->new_deadline) {
+                $isOverdueAgainstNewDeadline = Carbon::now()->greaterThan(Carbon::parse($prevDecision->new_deadline));
+            }
+
+            // Inherit decision if still within the secondary deadline
+            if (!$isOverdueAgainstNewDeadline) {
+                $time_tracker_info->hr_status = $prevDecision->hr_status;
+                $time_tracker_info->new_deadline = $prevDecision->new_deadline;
+                $time_tracker_info->ba_delay_reason = $prevDecision->ba_delay_reason;
+            } else {
+                // Second breach detected, needs new HR review
+                $time_tracker_info->hr_status = 'pending';
+            }
+        } else {
+            // No previous decision, ensure it's pending if not already processed
+            if (!$time_tracker_info->hr_status) {
+                $time_tracker_info->hr_status = 'pending';
+            }
+        }
+        // ---------------------------------
+
+        $time_tracker_info->save();
+    }
+
     // Send email to BA only if needed (for new development projects or when BA email is updated)
     $needsNotification = $shouldShowProjectDate
         && $request->project_type === 'development'
@@ -411,7 +441,53 @@ public function update_time_tracker_info(TimeTrackerRequest $request)
     return redirect()->route('view_time_tracker_info', ['start_date' => 0, 'end_date' => 0])
         ->with('success', 'Time tracker updated successfully!');
 }
-     public function DeleteTimeTracker($id){
+     public function showUpdateForm($id)
+    {
+        $timeTracker = TimeTracker::findOrFail($id);
+        return view('User.time_tracker.update-project-date', compact('timeTracker'));
+    }
+
+    public function updateProjectStartDate(Request $request, $id)
+    {
+        $request->validate([
+            'project_start_date' => 'required|date',
+        ]);
+
+        $timeTracker = TimeTracker::findOrFail($id);
+        
+        // Update all entries for this project that don't have a start date
+        TimeTracker::where('project_id', $timeTracker->project_id)
+            ->whereNull('project_start_date')
+            ->update([
+                'project_start_date' => $request->project_start_date,
+                'ba_filled' => true
+            ]);
+
+        return redirect()->back()->with('success', 'Project start date updated successfully.');
+    }
+
+    public function showNewDeadlineForm($id)
+    {
+        $timeTracker = TimeTracker::findOrFail($id);
+        return view('User.time_tracker.update-new-deadline', compact('timeTracker'));
+    }
+
+    public function updateNewDeadline(Request $request, $id)
+    {
+        $request->validate([
+            'new_deadline' => 'required|date',
+            'ba_delay_reason' => 'required|string',
+        ]);
+
+        $timeTracker = TimeTracker::findOrFail($id);
+        $timeTracker->new_deadline = $request->new_deadline;
+        $timeTracker->ba_delay_reason = $request->ba_delay_reason;
+        $timeTracker->save();
+
+        return redirect()->back()->with('success', 'New deadline and delay reason updated successfully.');
+    }
+
+    public function DeleteTimeTracker($id){
         $time_tracker_info = TimeTracker::find($id);
         $time_tracker_info->delete();
         return redirect()->route('view_time_tracker_info', ['start_date' => 0, 'end_date' => 0])

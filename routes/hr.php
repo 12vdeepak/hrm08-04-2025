@@ -69,4 +69,6 @@ Route::group(['middleware' => ['hr'], 'prefix' => '/'], function () {
 
 
     Route::delete('upload-file/{id}', [FileUploadController::class, 'destroy'])->name('hr.upload.file.delete');
+    Route::post('approve_project_reason/{id}', [ViewTimeTrackerController::class, 'approveReason'])->name('hr.approve.project.reason');
+    Route::post('reject_project_reason/{id}', [ViewTimeTrackerController::class, 'rejectReason'])->name('hr.reject.project.reason');
 });

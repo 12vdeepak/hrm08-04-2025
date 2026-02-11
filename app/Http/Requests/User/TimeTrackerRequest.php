@@ -62,6 +62,11 @@ class TimeTrackerRequest extends FormRequest
         $rules['project_type'] = 'nullable';
     }
 
+    // Enforce mandatory reason if project is overdue and in progress
+    if (in_array($user->department_id, $projectStartDateDepartments)) {
+        $rules['status_reason'] = 'required_if:project_status,in_progress';
+    }
+
     return $rules;
 }
 

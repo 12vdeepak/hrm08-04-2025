@@ -1,9 +1,8 @@
-<!-- resources/views/emails/ba_notification.blade.php -->
 <!DOCTYPE html>
 <html>
 
 <head>
-    <title>Project Start Date Required</title>
+    <title>Deadline Extension Request</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,8 +17,8 @@
         }
 
         .header {
-            background: #007bff;
-            color: white;
+            background: #ffc107;
+            color: black;
             padding: 20px;
             text-align: center;
         }
@@ -33,7 +32,7 @@
             background: white;
             padding: 15px;
             margin: 15px 0;
-            border-left: 4px solid #007bff;
+            border-left: 4px solid #ffc107;
         }
 
         .button {
@@ -58,34 +57,27 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Project Start Date Required</h1>
+            <h1>Deadline Extension Request</h1>
         </div>
 
         <div class="content">
             <p>Dear Business Analyst,</p>
 
-            <p>A new time tracker entry has been submitted that requires a project start date to be filled in.</p>
+            <p>HR has approved a delay reason for a project that has passed its deadline. As a result, they are requesting a new deadline and a reason for the delay from your end.</p>
 
             <div class="details">
-                <h3>Time Tracker Details:</h3>
-                <p><strong>Employee:</strong> {{ $user->name }}</p>
-                <p><strong>Department:</strong> {{ $user->department->name ?? 'N/A' }}</p>
+                <h3>Project Details:</h3>
+                <p><strong>Employee:</strong> {{ $user->name }} {{ $user->lastname }}</p>
                 <p><strong>Project:</strong> {{ $project->name ?? 'N/A' }}</p>
-                <p><strong>Work Date:</strong> {{ $timeTracker->work_date }}</p>
-                <p><strong>Work Description:</strong> {{ $timeTracker->work_title }}</p>
-                <p><strong>Hours:</strong> {{ $timeTracker->work_time }}</p>
+                <p><strong>User's Delay Reason:</strong> {{ $timeTracker->status_reason }}</p>
             </div>
 
-            <p>Please click the button below to access the system and fill in the project start date:</p>
+            <p>Please click the button below to provide the new deadline and the BA-side delay reason:</p>
 
-            {{-- Simple link (requires BA to be logged in if route has auth middleware) --}}
-            <a href="{{ route('ba.update.project.date.form', ['timeTracker' => $timeTracker->id]) }}"
+            <a href="{{ $updateUrl }}"
                 style="background:#28a745;color:#fff;padding:12px 16px;border-radius:4px;text-decoration:none;display:inline-block;">
-                Update Project Start Date
+                Update New Deadline
             </a>
-
-
-
 
         </div>
 

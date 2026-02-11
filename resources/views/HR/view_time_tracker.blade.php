@@ -227,11 +227,15 @@
                                                             <th>Job Name</th>
                                                             <th>Work Description</th>
                                                             <th>Time</th>
+                                                            @if (isset($showProjectStartDate) && $showProjectStartDate)
+                                                                <th>Overdue Status</th>
+                                                                <th>Reason & HR Action</th>
+                                                            @endif
                                                             <th>Action</th>
-
                                                         </tr>
                                                     </thead>
                                                     <tbody>
+                                                        @php $shownProjects = []; @endphp
                                                         @foreach ($time_tracker as $time_tracker_info)
                                                             <tr>
                                                                 <td>{{ $loop->iteration }}</td>
@@ -254,8 +258,91 @@
                                                                     </td>
                                                                 @endif
                                                                 <td>{{ $time_tracker_info->job?->name ?? 'N/A' }}</td>
-                                                                <td>{{ $time_tracker_info->work_title }}</td>
+                                                                <td>
+                                                                    {{ Str::limit($time_tracker_info->work_title, 40) }}
+                                                                    @if (strlen($time_tracker_info->work_title) > 40)
+                                                                        <a href="javascript:void(0);" class="text-primary ms-1 view-full-text" 
+                                                                           data-title="Work Description" 
+                                                                           data-content="{{ $time_tracker_info->work_title }}">
+                                                                           <i class="feather feather-eye"></i>
+                                                                        </a>
+                                                                    @endif
+                                                                </td>
                                                                 <td>{{ $time_tracker_info->work_time }}</td>
+                                                                @if (isset($showProjectStartDate) && $showProjectStartDate)
+                                                                    <td>
+                                                                        @if ($time_tracker_info->project_status === 'completed')
+                                                                            <span class="badge bg-success">Completed</span>
+                                                                        @elseif($time_tracker_info->project_status === 'in_progress')
+                                                                            <span class="badge bg-warning">In Progress</span>
+                                                                        @else
+                                                                            <span class="badge bg-secondary">N/A</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td>
+                                                                        @if ($time_tracker_info->project_status === 'in_progress')
+                                                                            <p class="mb-1">
+                                                                                <strong>Dev Reason:</strong>
+                                                                                {{ Str::limit($time_tracker_info->status_reason, 30) }}
+                                                                                @if (strlen($time_tracker_info->status_reason) > 30)
+                                                                                    <a href="javascript:void(0);" class="text-primary ms-1 view-full-text" 
+                                                                                       data-title="Dev Reason" 
+                                                                                       data-content="{{ $time_tracker_info->status_reason }}">
+                                                                                       <i class="feather feather-info"></i>
+                                                                                    </a>
+                                                                                @endif
+                                                                            </p>
+                                                                            @if ($time_tracker_info->ba_delay_reason)
+                                                                                <p class="mb-1 text-info">
+                                                                                    <strong>BA Reason:</strong>
+                                                                                    {{ Str::limit($time_tracker_info->ba_delay_reason, 30) }}
+                                                                                    @if (strlen($time_tracker_info->ba_delay_reason) > 30)
+                                                                                        <a href="javascript:void(0);" class="text-info ms-1 view-full-text" 
+                                                                                           data-title="BA Reason" 
+                                                                                           data-content="{{ $time_tracker_info->ba_delay_reason }}">
+                                                                                           <i class="feather feather-info"></i>
+                                                                                        </a>
+                                                                                    @endif
+                                                                                </p>
+                                                                            @endif
+                                                                            <div class="hr-action mt-1">
+                                                                                @if ($time_tracker_info->hr_status === 'pending')
+                                                                                    @if (!in_array($time_tracker_info->project_id, $shownProjects))
+                                                                                        <form
+                                                                                            action="{{ route('hr.approve.project.reason', $time_tracker_info->id) }}"
+                                                                                            method="POST"
+                                                                                            class="d-inline">
+                                                                                            @csrf
+                                                                                            <button type="submit"
+                                                                                                class="btn btn-success btn-xs"
+                                                                                                title="Approve & Notify BA (Bulk)">Approve</button>
+                                                                                        </form>
+                                                                                        <form
+                                                                                            action="{{ route('hr.reject.project.reason', $time_tracker_info->id) }}"
+                                                                                            method="POST"
+                                                                                            class="d-inline">
+                                                                                            @csrf
+                                                                                            <button type="submit"
+                                                                                                class="btn btn-danger btn-xs"
+                                                                                                title="Reject Reason (Bulk)">Reject</button>
+                                                                                        </form>
+                                                                                        @php $shownProjects[] = $time_tracker_info->project_id; @endphp
+                                                                                    @else
+                                                                                        <span class="text-muted small">Pending
+                                                                                            (Apply to first entry)</span>
+                                                                                    @endif
+                                                                                @elseif($time_tracker_info->hr_status === 'approved')
+                                                                                    <span class="text-success small">Approved
+                                                                                        & Mail Sent</span>
+                                                                                @elseif($time_tracker_info->hr_status === 'rejected')
+                                                                                    <span class="text-danger small">Rejected</span>
+                                                                                @endif
+                                                                            </div>
+                                                                        @else
+                                                                            -
+                                                                        @endif
+                                                                    </td>
+                                                                @endif
                                                                 @php
                                                                     [$hours1, $minutes1] = explode(':', $total_time);
                                                                     [$hours2, $minutes2] = explode(
@@ -287,17 +374,16 @@
                                                                         $totalMinutes,
                                                                     );
                                                                 @endphp
-                                                                @if ($time_tracker_info->user_id == auth()->user()->id)
-                                                                    <td>
-
+                                                                <td>
+                                                                    @if ($time_tracker_info->user_id == auth()->user()->id)
                                                                         <a href="{{ route('edit_hr_time_tracker_info', ['id' => $time_tracker_info]) }}"
                                                                             class="btn btn-warning btn-sm"><i
                                                                                 class="feather feather-edit"></i></a>
                                                                         <a href="{{ route('hr_delete_time_tracker', ['id' => $time_tracker_info]) }}"
                                                                             class="btn btn-danger btn-sm"><i
                                                                                 class="feather feather-trash"></i></a>
-                                                                    </td>
-                                                                @endif
+                                                                    @endif
+                                                                </td>
                                                             </tr>
                                                         @endforeach
                                                     </tbody>
@@ -330,6 +416,26 @@
         @if (count($data) > 1)
             {{ $employees->links() }}
         @endif
+
+        <!-- Full Text Modal -->
+        <div class="modal fade" id="fullTextModal" tabindex="-1" role="dialog" aria-labelledby="fullTextModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="fullTextModalLabel">Full Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="fullTextContent" style="white-space: pre-wrap; word-wrap: break-word;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endsection
     @section('scripts')
         <script>
@@ -349,5 +455,13 @@
                 console.log(url);
                 window.location.href = url;
             }
+
+            $(document).on('click', '.view-full-text', function() {
+                var title = $(this).data('title');
+                var content = $(this).data('content');
+                $('#fullTextModalLabel').text(title);
+                $('#fullTextContent').text(content);
+                $('#fullTextModal').modal('show');
+            });
         </script>
     @endsection

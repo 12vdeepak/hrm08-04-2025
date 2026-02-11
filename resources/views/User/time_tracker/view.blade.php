@@ -98,7 +98,7 @@
                                 @elseif($time_tracker_info->project_type === 'marketing') badge-info
                                 @elseif($time_tracker_info->project_type === 'support') badge-warning
                                 @elseif($time_tracker_info->project_type === 'meeting') badge-secondary @endif">
-                                                                            {{ ucfirst($time_tracker_info->project_type) }}
+                                                                            {{ $time_tracker_info->project_type === 'development' ? 'Development (Active)' : ucfirst($time_tracker_info->project_type) }}
                                                                         </span>
                                                                     @else
                                                                         <span class="badge badge-light">Not Set</span>

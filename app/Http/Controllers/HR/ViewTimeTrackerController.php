@@ -11,8 +11,41 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
+use Illuminate\Support\Facades\Mail;
+use App\Mail\DeadlineRequest;
+
 class ViewTimeTrackerController extends Controller
 {
+    public function approveReason($id)
+    {
+        $time_tracker = TimeTracker::findOrFail($id);
+        
+        // Update all pending records for this project and user
+        TimeTracker::where('project_id', $time_tracker->project_id)
+            ->where('user_id', $time_tracker->user_id)
+            ->where('hr_status', 'pending')
+            ->update(['hr_status' => 'approved']);
+
+        if ($time_tracker->ba_email) {
+            Mail::to($time_tracker->ba_email)->send(new DeadlineRequest($time_tracker));
+        }
+
+        return redirect()->back()->with('success', 'Reason(s) approved and request sent to BA.');
+    }
+
+    public function rejectReason($id)
+    {
+        $time_tracker = TimeTracker::findOrFail($id);
+        
+        // Update all pending records for this project and user
+        TimeTracker::where('project_id', $time_tracker->project_id)
+            ->where('user_id', $time_tracker->user_id)
+            ->where('hr_status', 'pending')
+            ->update(['hr_status' => 'rejected']);
+
+        return redirect()->back()->with('error', 'Reason(s) rejected.');
+    }
+
     public function view_employee_time_tracker($id, $start_date = null, $end_date = null)
 {
     if ($id == 0) {

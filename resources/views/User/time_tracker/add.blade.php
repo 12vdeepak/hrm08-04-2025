@@ -75,7 +75,7 @@
                                             <option value="" {{ old('project_type') == '' ? 'selected' : '' }}>Select
                                                 Project Type</option>
                                             <option value="development"
-                                                {{ old('project_type') == 'development' ? 'selected' : '' }}>Development
+                                                {{ old('project_type') == 'development' ? 'selected' : '' }}>Development (Active) 
                                             </option>
                                             <option value="marketing"
                                                 {{ old('project_type') == 'marketing' ? 'selected' : '' }}>Marketing
@@ -228,6 +228,37 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {{-- Project Status (only for overdue projects) --}}
+                            <div id="overdue-section" style="display: none;">
+                                <hr>
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-md-12 col-lg-2">
+                                            <label class="form-label mb-0 mt-2">Project Status <span
+                                                    class="text-danger">*</span></label>
+                                        </div>
+                                        <div class="col-md-12 col-lg-8">
+                                            <select class="form-control" name="project_status" id="project_status">
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group" id="reason-section">
+                                    <div class="row">
+                                        <div class="col-md-12 col-lg-2">
+                                            <label class="form-label mb-0 mt-2">Reason (if in progress) <span
+                                                    class="text-danger">*</span></label>
+                                        </div>
+                                        <div class="col-md-12 col-lg-8">
+                                            <textarea class="form-control" name="status_reason" id="status_reason"
+                                                placeholder="Mention reason why project is still in progress" required></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         @endif
 
                     </div>
@@ -343,6 +374,7 @@
             // 2. Project already has start date and project type is development
             if (projectType === 'marketing' || projectType === 'support' || projectType === 'meeting') {
                 $('#ba-section').hide();
+                $('#overdue-section').hide();
             } else if (projectType === 'development' && projectId) {
                 // Check if project already has start date
                 $.ajax({
@@ -352,9 +384,17 @@
                         if (response.exists) {
                             $('#ba-section').hide();
                             $('input[name="project_start_date"]').val(response.start_date);
+
+                            // Show overdue section if project is overdue
+                            if (response.is_overdue) {
+                                $('#overdue-section').show();
+                            } else {
+                                $('#overdue-section').hide();
+                            }
                         } else {
                             $('#ba-section').show();
                             $('input[name="project_start_date"]').val('');
+                            $('#overdue-section').hide();
                         }
                     },
                     error: function(err) {
@@ -363,6 +403,7 @@
                 });
             } else if (projectType === 'development') {
                 $('#ba-section').show();
+                $('#overdue-section').hide();
             }
         }
 
@@ -420,6 +461,16 @@
 
             // Initial check on page load
             checkBaSectionVisibility();
+
+            $('#project_status').on('change', function() {
+                if ($(this).val() === 'in_progress') {
+                    $('#reason-section').show();
+                    $('#status_reason').attr('required', true);
+                } else {
+                    $('#reason-section').hide();
+                    $('#status_reason').attr('required', false);
+                }
+            });
         });
     </script>
 @endsection
