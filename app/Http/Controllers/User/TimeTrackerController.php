@@ -141,7 +141,7 @@ public function create_time_tracker_info(TimeTrackerRequest $request)
     $time_tracker_info->save();
 
     // Save project status and reason if provided (for overdue projects)
-    if ($request->has('project_status')) {
+    if ($request->filled('project_status')) {
         $time_tracker_info->project_status = $request->project_status;
         $time_tracker_info->status_reason = $request->status_reason;
         
@@ -381,7 +381,7 @@ public function update_time_tracker_info(TimeTrackerRequest $request)
     $time_tracker_info->save();
 
     // Save project status and reason if provided (for overdue projects)
-    if ($request->has('project_status')) {
+    if ($request->filled('project_status')) {
         $time_tracker_info->project_status = $request->project_status;
         $time_tracker_info->status_reason = $request->status_reason;
 

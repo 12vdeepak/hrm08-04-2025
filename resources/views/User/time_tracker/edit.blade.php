@@ -279,6 +279,7 @@
                                         </div>
                                         <div class="col-md-12 col-lg-8">
                                             <select class="form-control" name="project_status" id="project_status">
+                                                <option value="">Select Status</option>
                                                 <option value="in_progress"
                                                     {{ $time_tracker_info->project_status === 'in_progress' ? 'selected' : '' }}>
                                                     In Progress</option>
@@ -401,6 +402,7 @@
                 $('#ba-section').hide();
                 $('#overdue-section').hide();
                 $('#status_reason').attr('required', false);
+                $('#project_status').val(''); // Reset status
             } else if (projectType === 'development' && projectId) {
                 // Check if project already has start date
                 $.ajax({
@@ -420,6 +422,7 @@
                             } else {
                                 $('#overdue-section').hide();
                                 $('#status_reason').attr('required', false);
+                                $('#project_status').val(''); // Reset status
                             }
                         } else {
                             $('#ba-section').show();
@@ -428,6 +431,7 @@
                             }
                             $('#overdue-section').hide();
                             $('#status_reason').attr('required', false);
+                            $('#project_status').val(''); // Reset status
                         }
                     },
                     error: function(err) {
@@ -438,6 +442,7 @@
                 $('#ba-section').show();
                 $('#overdue-section').hide();
                 $('#status_reason').attr('required', false);
+                $('#project_status').val(''); // Reset status
             }
         }
 
