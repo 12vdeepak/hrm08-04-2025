@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Models\Leave;
+use App\Models\Holiday;
 
 class WeeklyLateCheckInReport extends Command
 {
@@ -29,6 +30,20 @@ class WeeklyLateCheckInReport extends Command
         $lateCheckIns = [];
 
         for ($date = $startOfWeek->copy(); $date->lte($endOfWeek); $date->addDay()) {
+            // Check if it's a weekend
+            if ($date->isWeekend()) {
+                continue;
+            }
+
+            // Check if it's a holiday
+            $isHoliday = Holiday::where('start_date', '<=', $date)
+                ->where('end_date', '>=', $date)
+                ->exists();
+            
+            if ($isHoliday) {
+                continue;
+            }
+
             $cutoffTime = $date->copy()->setTime(11, 0, 0);
 
             // Users on approved leave
