@@ -106,7 +106,7 @@ class SendProjectOverdueReminders extends Command
 
                     try {
                         Mail::to($user->email)
-                            ->cc(['niranjanquantumitinnovation@gmail.com','hr@quantumitinnovation.com','nitin.quantumitinnovation@gmail.com'])
+                            ->cc(['niranjanquantumitinnovation@gmail.com','hr@quantumitinnovation.com','nitin.quantumitinnovation@gmail.com','mansi@quantumitinnovation.com','sanchitha@quantumitinnovation.com'])
                             ->send(new ProjectOverdueReminderMail(
                             $user,
                             $project,
