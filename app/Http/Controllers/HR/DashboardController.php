@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\EmployeeApplicationTime;
 use Stevebauman\Location\Facades\Location as IPLocation;
+use App\Helpers\ShiftHelper;
 
 class DashboardController extends Controller
 {
@@ -25,40 +26,42 @@ class DashboardController extends Controller
         $count['departments'] = Department::count();
         $count['locations'] = Location::count();
         $response = array();
-        // $application_time=EmployeeApplicationTime::where('user_id', auth()->user()->id)->where('date', date('Y-m-d'))->first();
-        // $response['application_time']=$application_time->time;
-        $user = auth()->user();
-        $check_in = CheckIn::where('user_id', $user->id)->whereDate('start_time', '=', date('Y-m-d'))->orderBy('start_time', 'desc')->first();
-        if ($check_in) {
-            if ($check_in->end_time != null) {
-                $check_ins = CheckIn::where('user_id', $user->id)->whereDate('start_time', '=', date('Y-m-d'))->get();
-                $time = 0;
-                foreach ($check_ins as $check_in) {
-                    if ($check_in->end_time != null) {
-                        $time = $time + strtotime($check_in->end_time) - strtotime($check_in->start_time);
-                    } else {
-                        $time = $time + strtotime(date('Y-m-d H:i:s')) - strtotime($check_in->start_time);
-                    }
+
+        $user       = auth()->user();
+        $shift_type = $user->shift_type ?? 'india';
+
+        // Resolve today's shift date (handles cross-midnight US/Canada shifts)
+        $today_shift_date = ShiftHelper::resolveShiftDate($shift_type);
+
+        // Check for any open check-in
+        $open_check_in = CheckIn::where('user_id', $user->id)
+            ->whereNull('end_time')
+            ->orderBy('start_time', 'desc')
+            ->first();
+
+        // All check-ins for today's shift date
+        $check_ins = CheckIn::where('user_id', $user->id)
+            ->where('shift_date', $today_shift_date)
+            ->get();
+
+        if ($check_ins->isNotEmpty()) {
+            $time = 0;
+            foreach ($check_ins as $ci) {
+                if ($ci->end_time != null) {
+                    $time += strtotime($ci->end_time) - strtotime($ci->start_time);
+                } else {
+                    $time += strtotime(date('Y-m-d H:i:s')) - strtotime($ci->start_time);
                 }
-                $response['button_status'] = 1;
-                $response['time'] = $time;
-            } else {
-                $check_ins = CheckIn::where('user_id', $user->id)->whereDate('start_time', '=', date('Y-m-d'))->get();
-                $time = 0;
-                foreach ($check_ins as $check_in) {
-                    if ($check_in->end_time != null) {
-                        $time = $time + strtotime($check_in->end_time) - strtotime($check_in->start_time);
-                    } else {
-                        $time = $time + strtotime(date('Y-m-d H:i:s')) - strtotime($check_in->start_time);
-                    }
-                }
-                $response['button_status'] = 2;
-                $response['time'] = $time;
             }
+            // Button: if there's an open check-in for TODAY's shift, show Clock Out
+            $has_open_for_today = $open_check_in && ($open_check_in->shift_date === $today_shift_date);
+            $response['button_status'] = $has_open_for_today ? 2 : 1;
+            $response['time'] = $time;
         } else {
             $response['button_status'] = 1;
             $response['time'] = 0;
         }
+
         return view('HR.dashboard', compact('employees', 'count', 'response'));
     }
 

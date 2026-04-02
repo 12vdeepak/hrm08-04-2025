@@ -25,44 +25,45 @@ class CheckInController extends Controller
         $shift_type = $user->shift_type ?? 'india';
 
         /*
-         * CHECKOUT CHECK (highest priority):
-         * If the user has ANY open check-in (end_time IS NULL),
-         * record the checkout on that record — regardless of what
-         * time it is or which calendar date we are on.
-         * This allows an employee to check in at 9 AM and check out
-         * at 1 AM the next day without the system creating a new
-         * check-in by mistake.
+         * NEW SHIFT-DATE AWARE LOGIC:
+         * 1. Resolve today's shift date.
+         * 2. Find ANY open check-in (end_time IS NULL).
+         * 3. If that open check-in's shift_date MATCHES today's resolved shift date:
+         *    -> This is a valid "Check Out" action for the current shift.
+         * 4. If that open check-in is from a PAST shift date:
+         *    -> Auto-close it (end_time = start_time) and proceed to NEW check-in.
          */
+        $shift_date = ShiftHelper::resolveShiftDate($shift_type);
+
         $open_check_in = CheckIn::where('user_id', $user->id)
             ->whereNull('end_time')
             ->orderBy('start_time', 'desc')
             ->first();
 
         if ($open_check_in) {
-            // Close the open check-in
-            $open_check_in->end_time          = date('Y-m-d H:i:s');
-            $open_check_in->end_time_location = $location;
-            $open_check_in->out_ip_address    = $ip;
-            $open_check_in->save();
+            if ($open_check_in->shift_date === $shift_date) {
+                // VALID CHECK-OUT for today's shift
+                $open_check_in->end_time          = date('Y-m-d H:i:s');
+                $open_check_in->end_time_location = $location;
+                $open_check_in->out_ip_address    = $ip;
+                $open_check_in->save();
 
-            // Calculate total hours for the shift_date of the record just closed
-            $time = $this->calculateShiftTime($user->id, $open_check_in->shift_date);
-
-            $response['button_status'] = 1; // Checked out
-            $response['time']          = $time;
-
-            return $response;
+                $time = $this->calculateShiftTime($user->id, $open_check_in->shift_date);
+                $response['button_status'] = 1; // Show Clock In
+                $response['time']          = $time;
+                return $response;
+            } else {
+                // STALE OPEN RECORD (from yesterday or earlier)
+                // Just close it silently so it doesn't poison the time calculation
+                $open_check_in->end_time = $open_check_in->start_time;
+                $open_check_in->save();
+                // Proceed to NEW check-in logic below
+            }
         }
 
         /*
-         * NEW CHECK-IN:
-         * No open record found → the employee is clocking in.
-         * Resolve the correct shift_date from ShiftHelper so that
-         * a US/Canada employee checking in at (e.g.) 11 PM is recorded
-         * on the correct shift date even if it's technically tomorrow IST.
+         * NEW CHECK-IN (Either no open record, or we just closed a stale one)
          */
-        $shift_date = ShiftHelper::resolveShiftDate($shift_type);
-
         $check_in = new CheckIn();
         $check_in->user_id             = $user->id;
         $check_in->shift_date          = $shift_date;
@@ -73,7 +74,7 @@ class CheckInController extends Controller
 
         $this->createNewActivity();
 
-        $response['button_status'] = 2; // Checked in
+        $response['button_status'] = 2; // Show Clock Out
         $response['time']          = $this->calculateShiftTime($user->id, $shift_date);
 
         return $response;

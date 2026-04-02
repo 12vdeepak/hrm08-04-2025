@@ -181,12 +181,14 @@
         }
 
         function Time(seconds) {
-            var hours = Math.floor(seconds / 3600);
+            seconds = parseInt(seconds);
+            var hours   = Math.floor(seconds / 3600);
             var minutes = Math.floor((seconds % 3600) / 60);
-            var seconds = Math.floor(seconds % 60);
+            var secs    = Math.floor(seconds % 60);
+            hours   = (hours   < 10 ? '0' : '') + hours;
             minutes = (minutes < 10 ? '0' : '') + minutes;
-            seconds = (seconds < 10 ? '0' : '') + seconds;
-            var timeString = hours + ':' + minutes + ':' + seconds;
+            secs    = (secs    < 10 ? '0' : '') + secs;
+            var timeString = hours + ':' + minutes + ':' + secs;
             var time_display = document.getElementById("check_in_duration");
             time_display.value = timeString;
         }
@@ -219,7 +221,8 @@
             });
         }
 
-        updateTimer();
+        // Show correct time immediately on page load (no extra +1 tick)
+        Time(document.getElementById("timer").value);
         if (document.getElementById("timer_onn").value == 2) {
             startTimer();
         }
