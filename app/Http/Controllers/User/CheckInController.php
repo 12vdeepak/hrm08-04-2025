@@ -17,8 +17,9 @@ class CheckInController extends Controller
         $user      = auth()->user();
 
         // Get the user's IP and location
-        $ip       = (env('APP_URL') == "http://localhost") ? '103.48.108.74' : request()->ip();
-        $location = Location::get($ip)->cityName;
+        $ip           = (env('APP_URL') == "http://localhost") ? '103.48.108.74' : request()->ip();
+        $locationData = Location::get($ip);
+        $location     = ($locationData && $locationData->cityName) ? $locationData->cityName : 'Unknown';
         $response['location'] = $location;
 
         $shift_type = $user->shift_type ?? 'india';
