@@ -4,78 +4,116 @@ namespace App\Helpers;
 
 use Carbon\Carbon;
 
+/**
+ * ShiftHelper — Region-based shift definitions.
+ *
+ * All times are in IST (Asia/Kolkata, UTC+5:30), which is the server timezone.
+ *
+ * ┌──────────┬────────────────────────────┬─────────────────────────────┬─────────────────┐
+ * │ Region   │ Local Working Hours        │ In IST (server time)        │ Late Cutoff IST │
+ * ├──────────┼────────────────────────────┼─────────────────────────────┼─────────────────┤
+ * │ india    │ 9:00 AM – 7:00 PM IST      │ 9:00 AM – 7:00 PM (same)    │ 11:00 AM        │
+ * │ uk       │ 9:00 AM – 6:00 PM GMT/BST  │ 2:30 PM – 11:30 PM IST      │ 3:00 PM IST     │
+ * │ us       │ 9:00 AM – 6:00 PM EST/EDT  │ 7:30 PM – 4:30 AM +1 IST   │ 8:30 PM IST     │
+ * │ canada   │ 9:00 AM – 6:00 PM EST/CST  │ 7:30 PM – 5:30 AM +1 IST   │ 8:30 PM IST     │
+ * └──────────┴────────────────────────────┴─────────────────────────────┴─────────────────┘
+ *
+ * US and Canada shifts cross midnight (IST), so their shift_date resolution uses the
+ * "if current IST hour < 12 → return yesterday" rule to correctly attribute post-midnight
+ * check-outs to the previous evening's shift.
+ */
 class ShiftHelper
 {
     /**
-     * Night shift window:
-     *   - Starts: 4:00 PM on the shift_date
-     *   - Ends:  12:00 PM (noon) on the NEXT calendar day
-     * This covers 7 PM start → 4 AM end with generous buffers.
+     * All supported shift regions with their IST-based configuration.
      *
-     * Day shift window:
-     *   - Starts: 00:00:00 on the shift_date
-     *   - Ends:   23:59:59 on the same shift_date
+     * @return array<string, array{label: string, crosses_midnight: bool, late_cutoff: string}>
      */
-
-    /**
-     * Return [Carbon $from, Carbon $to] that defines the DB query window
-     * for check_ins belonging to a given shift date.
-     *
-     * @param  string  $shift_date  'Y-m-d'
-     * @param  string  $shift_type  'day' | 'night'
-     * @return array{Carbon, Carbon}
-     */
-    public static function getWindow(string $shift_date, string $shift_type = 'day'): array
+    public static function regions(): array
     {
-        if ($shift_type === 'night') {
-            $from = Carbon::parse($shift_date)->setTime(16, 0, 0);  // 4:00 PM shift date
-            $to   = Carbon::parse($shift_date)->addDay()->setTime(12, 0, 0); // noon next day
-        } else {
-            $from = Carbon::parse($shift_date)->startOfDay();
-            $to   = Carbon::parse($shift_date)->endOfDay();
-        }
-
-        return [$from, $to];
+        return [
+            'india' => [
+                'label'           => '🇮🇳 India — IST (9:00 AM – 7:00 PM)',
+                'crosses_midnight' => false,
+                'late_cutoff'     => '11:00:00', // 11:00 AM IST
+            ],
+            'uk' => [
+                'label'           => '🇬🇧 UK — GMT/BST (9:00 AM – 6:00 PM UK = 2:30–11:30 PM IST)',
+                'crosses_midnight' => false,   // ends before IST midnight
+                'late_cutoff'     => '15:00:00', // 3:00 PM IST ≈ 9:30 AM UK + 30 min grace
+            ],
+            'us' => [
+                'label'           => '🇺🇸 US — EST/EDT (9:00 AM – 6:00 PM EST = 7:30 PM – 4:30 AM IST)',
+                'crosses_midnight' => true,    // ends after IST midnight
+                'late_cutoff'     => '20:30:00', // 8:30 PM IST ≈ 9:00 AM EST + 1 hr grace
+            ],
+            'canada' => [
+                'label'           => '🇨🇦 Canada — EST/CST (9:00 AM – 6:00 PM = 7:30 PM – 5:30 AM IST)',
+                'crosses_midnight' => true,    // ends after IST midnight
+                'late_cutoff'     => '20:30:00', // 8:30 PM IST ≈ 9:00 AM local + 1 hr grace
+            ],
+        ];
     }
 
     /**
-     * Given the current timestamp, resolve the correct shift_date for the employee.
+     * Given the current IST timestamp, resolve the correct shift_date for the employee.
      *
-     * Night shift rule:
-     *   - If current time is before noon (12:00 PM), the shift started yesterday.
-     *   - Otherwise the shift started today.
+     * Rule for midnight-crossing shifts (US, Canada):
+     *   - If current IST hour < 12 (noon), we are in the "tail" of last night's shift.
+     *     → shift_date = YESTERDAY
+     *   - Otherwise we are in the start of a new shift.
+     *     → shift_date = TODAY
      *
-     * Day shift rule:
-     *   - shift_date is always today.
+     * Rule for non-midnight-crossing shifts (India, UK):
+     *   - shift_date = always TODAY
      *
-     * @param  string       $shift_type  'day' | 'night'
-     * @param  Carbon|null  $now         Override for testing; defaults to Carbon::now()
+     * @param  string       $shift_type   'india' | 'uk' | 'us' | 'canada'
+     * @param  Carbon|null  $now          Override for testing; defaults to Carbon::now()
      * @return string  'Y-m-d'
      */
-    public static function resolveShiftDate(string $shift_type = 'day', ?Carbon $now = null): string
+    public static function resolveShiftDate(string $shift_type = 'india', ?Carbon $now = null): string
     {
-        $now = $now ?? Carbon::now();
+        $now    = $now ?? Carbon::now();
+        $region = self::regions()[$shift_type] ?? self::regions()['india'];
 
-        if ($shift_type === 'night') {
-            // If it's past midnight but before noon, we're still in "yesterday's" night shift
-            if ($now->hour < 12) {
-                return $now->copy()->subDay()->toDateString();
-            }
+        if ($region['crosses_midnight'] && $now->hour < 12) {
+            return $now->copy()->subDay()->toDateString();
         }
 
         return $now->toDateString();
     }
 
     /**
-     * Return the "late check-in" cutoff time string ('H:i:s') for a given shift type.
-     * Day shift:   11:00 AM  → '11:00:00'
-     * Night shift:  8:00 PM  → '20:00:00'
+     * Return the late check-in cutoff time string ('H:i:s') for the given shift region.
      *
-     * @param  string  $shift_type  'day' | 'night'
+     * @param  string  $shift_type  'india' | 'uk' | 'us' | 'canada'
+     * @return string  e.g. '11:00:00'
+     */
+    public static function lateCutoff(string $shift_type = 'india'): string
+    {
+        $region = self::regions()[$shift_type] ?? self::regions()['india'];
+        return $region['late_cutoff'];
+    }
+
+    /**
+     * Human-readable label for display in HR views / reports.
+     *
+     * @param  string  $shift_type  'india' | 'uk' | 'us' | 'canada'
      * @return string
      */
-    public static function lateCutoff(string $shift_type = 'day'): string
+    public static function label(string $shift_type = 'india'): string
     {
-        return $shift_type === 'night' ? '20:00:00' : '11:00:00';
+        $region = self::regions()[$shift_type] ?? self::regions()['india'];
+        return $region['label'];
+    }
+
+    /**
+     * Returns all regions as [value => label] for use in dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public static function dropdownOptions(): array
+    {
+        return collect(self::regions())->map(fn($r) => $r['label'])->toArray();
     }
 }

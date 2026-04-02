@@ -509,24 +509,22 @@
                             </div>
                         </div>
 
-                        {{-- Shift Type --}}
+                        {{-- Shift / Region --}}
                         <div class="form-group">
                             <div class="row">
                                 <div class="col-md-12 col-lg-2">
-                                    <label class="form-label mb-0 mt-2">Shift Type</label>
+                                    <label class="form-label mb-0 mt-2">Shift / Region</label>
                                 </div>
                                 <div class="col-md-12 col-lg-8">
                                     <select
                                         class="form-control custom-select select2 select2-hidden-accessible"
-                                        data-placeholder="Select Shift" tabindex="-1" aria-hidden="true" name="shift_type">
-                                        <option value="day" {{ old('shift_type', 'day') == 'day' ? 'selected' : '' }}>
-                                            🌅 Day Shift (9:00 AM – 7:00 PM)
-                                        </option>
-                                        <option value="night" {{ old('shift_type') == 'night' ? 'selected' : '' }}>
-                                            🌙 Night Shift (7:00 PM – 4:00 AM)
-                                        </option>
+                                        data-placeholder="Select Region" tabindex="-1" aria-hidden="true" name="shift_type">
+                                        <option value="india"  {{ old('shift_type', 'india') == 'india'  ? 'selected' : '' }}>🇮🇳 India — IST (9:00 AM – 7:00 PM)</option>
+                                        <option value="uk"     {{ old('shift_type') == 'uk'     ? 'selected' : '' }}>🇬🇧 UK — GMT/BST (9:00 AM – 6:00 PM UK = 2:30–11:30 PM IST)</option>
+                                        <option value="us"     {{ old('shift_type') == 'us'     ? 'selected' : '' }}>🇺🇸 US — EST/EDT (9:00 AM – 6:00 PM EST = 7:30 PM – 4:30 AM IST)</option>
+                                        <option value="canada" {{ old('shift_type') == 'canada' ? 'selected' : '' }}>🇨🇦 Canada — EST/CST (9:00 AM – 6:00 PM = 7:30 PM – 5:30 AM IST)</option>
                                     </select>
-                                    <small class="text-muted">Night shift employees can check in/out past midnight — attendance will be attributed to the shift's start date.</small>
+                                    <small class="text-muted">US &amp; Canada shifts cross midnight (IST) — check-outs after midnight are still attributed to the shift's start date.</small>
                                 </div>
                             </div>
                         </div>
