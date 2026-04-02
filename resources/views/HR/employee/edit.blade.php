@@ -580,6 +580,28 @@
                                 </div>
                             </div>
                         </div>
+
+                        {{-- Shift Type --}}
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-12 col-lg-2">
+                                    <label class="form-label mb-0 mt-2">Shift Type</label>
+                                </div>
+                                <div class="col-md-12 col-lg-8">
+                                    <select
+                                        class="form-control custom-select select2 select2-hidden-accessible"
+                                        data-placeholder="Select Shift" tabindex="-1" aria-hidden="true" name="shift_type">
+                                        <option value="day" {{ ($employee->shift_type ?? 'day') == 'day' ? 'selected' : '' }}>
+                                            🌅 Day Shift (9:00 AM – 7:00 PM)
+                                        </option>
+                                        <option value="night" {{ ($employee->shift_type ?? '') == 'night' ? 'selected' : '' }}>
+                                            🌙 Night Shift (7:00 PM – 4:00 AM)
+                                        </option>
+                                    </select>
+                                    <small class="text-muted">Night shift employees can check in/out past midnight — attendance will be attributed to the shift's start date.</small>
+                                </div>
+                            </div>
+                        </div>
                         @if( $employee->employee_status == 0)
                         <div class="form-group">
                             <div class="row">

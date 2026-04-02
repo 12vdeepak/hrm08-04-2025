@@ -8,10 +8,9 @@ use App\Models\CheckIn;
 use App\Models\Holiday;
 use App\Models\Leave;
 use App\Models\User;
+use App\Helpers\ShiftHelper;
 use Livewire\WithPagination;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
 class Attendance extends Component
@@ -40,7 +39,6 @@ class Attendance extends Component
     public function forceClosedModal()
     {
         $this->resetInputs();
-        // These two methods do the same thing, they clear the error bag.
         $this->resetErrorBag();
         $this->resetValidation();
     }
@@ -63,17 +61,10 @@ class Attendance extends Component
             });
         }
 
-
         $employees = $query->get();
         $employees->transform(function ($employee) {
-            $employee = $this->transformEmployee($employee);
-            return $employee;
+            return $this->transformEmployee($employee);
         });
-        // $employees = $query->paginate(1);
-        // $employees->getCollection()->transform(function ($employee) {
-        //     $employee = $this->transformEmployee($employee);
-        //     return $employee;
-        // });
 
         // Filter employees based on status
         if ($this->status != 0) {
@@ -85,48 +76,57 @@ class Attendance extends Component
                 }
             });
         }
-        // dd($employees);
+
         $hasPagination = $employees instanceof LengthAwarePaginator && $employees->hasPages();
-        // dd($hasPagination);
         return view('livewire.h-r.attendance', compact('employees', 'hasPagination'));
     }
 
     private function transformEmployee($employee)
     {
-        $date = $this->date;
+        $date       = $this->date;
+        $shift_type = $employee->shift_type ?? 'day';
 
-        $comment = AttendanceComment::where('user_id', $employee->id)->where('date', $date)->first();
-        $employee->comment = $comment ? $comment->comment : '-';
+        $comment             = AttendanceComment::where('user_id', $employee->id)->where('date', $date)->first();
+        $employee->comment   = $comment ? $comment->comment : '-';
 
-        $check_in_end = CheckIn::where('user_id', $employee->id)->whereDate('start_time', '=', $date)->orderBy('start_time', 'desc')->first();
+        // Query by shift_date column
+        $check_in_end = CheckIn::where('user_id', $employee->id)
+            ->where('shift_date', $date)
+            ->orderBy('start_time', 'desc')
+            ->first();
 
         if ($check_in_end) {
             if ($check_in_end->end_time !== null) {
-                $employee->check_out_time = date('h:i A', strtotime($check_in_end->end_time));
+                $employee->check_out_time     = date('h:i A', strtotime($check_in_end->end_time));
                 $employee->check_out_location = $check_in_end->end_time_location;
             } else {
-                $employee->check_out_time = "Yet to Check-out";
+                $employee->check_out_time     = "Yet to Check-out";
                 $employee->check_out_location = "-";
             }
 
-            $check_in_start = CheckIn::where('user_id', $employee->id)->whereDate('start_time', '=', $date)->orderBy('start_time', 'asc')->first();
-            $employee->check_in_time = date('h:i A', strtotime($check_in_start->start_time));
+            $check_in_start             = CheckIn::where('user_id', $employee->id)
+                ->where('shift_date', $date)
+                ->orderBy('start_time', 'asc')
+                ->first();
+            $employee->check_in_time     = date('h:i A', strtotime($check_in_start->start_time));
             $employee->check_in_location = $check_in_start->start_time_location;
         } else {
-            $employee->check_in_time = "Yet to Check-in";
-            $employee->check_out_time = "-";
+            $employee->check_in_time     = "Yet to Check-in";
+            $employee->check_out_time    = "-";
             $employee->check_out_location = "-";
             $employee->check_in_location = "-";
         }
 
-        $check_ins = CheckIn::where('user_id', $employee->id)->whereDate('start_time', '=', $date)->get();
+        // Sum completed durations for this shift date
+        $check_ins  = CheckIn::where('user_id', $employee->id)->where('shift_date', $date)->get();
         $total_time = 0;
 
         foreach ($check_ins as $check_in) {
             if ($check_in->end_time !== null) {
                 $total_time += strtotime($check_in->end_time) - strtotime($check_in->start_time);
             } else {
-                if ($date === date('Y-m-d')) {
+                $today_shift_date = ShiftHelper::resolveShiftDate($shift_type);
+                if ($date === $today_shift_date) {
                     $total_time += strtotime(date('Y-m-d H:i:s')) - strtotime($check_in->start_time);
                 } else {
                     $total_time = 0;
@@ -134,59 +134,56 @@ class Attendance extends Component
                 }
             }
         }
+
         $employee->time = gmdate('H:i', $total_time);
-        if ($date === date('Y-m-d')) {
-            if ($total_time >= config('constants.variable.permitted_work_hours') * 60 * 60) {
-                $employee->attendance = 'Present';
-            } else {
-                $employee->attendance = '-';
-            }
+
+        $today_shift_date = ShiftHelper::resolveShiftDate($shift_type);
+        if ($date === $today_shift_date) {
+            $employee->attendance = $total_time >= config('constants.variable.permitted_work_hours') * 60 * 60
+                ? 'Present' : '-';
         } elseif ($total_time < 3 * 60 * 60) {
             $employee->attendance = 'Absent';
         } elseif ($total_time < config('constants.variable.permitted_work_hours') * 60 * 60) {
             $employee->attendance = 'Half Day';
-        }
-        else {
+        } else {
             $employee->attendance = 'Present';
         }
 
-        // Check for holiday and weekend
+        // Holiday & weekend override
         if (Holiday::where('start_date', '<=', $date)->where('end_date', '>=', $date)->exists()) {
-            $employee->attendance = "Holiday"; //Holiday
+            $employee->attendance = "Holiday";
         } elseif (in_array(date('l', strtotime($date)), ['Sunday', 'Saturday'])) {
-            $employee->attendance = "Weekend"; //Weekend
+            $employee->attendance = "Weekend";
         }
 
-        //check if applied for leave at this date and approved
+        // Leave check
         $leaveExists = Leave::where('user_id', $employee->id)
             ->where(function ($query) use ($date) {
                 $query->where('start_date', '<=', $date)
                     ->where('end_date', '>=', $date);
             })->first();
 
-
-        if($leaveExists && $employee->attendance != 'Present'){
-            if($leaveExists->status == "Accepted By HR"){
-                $employee->attendance = "Approved Leave";
-            }else{
-                $employee->attendance = "Unapproved Leave";
-            }
+        if ($leaveExists && $employee->attendance != 'Present') {
+            $employee->attendance = $leaveExists->status == "Accepted By HR"
+                ? "Approved Leave" : "Unapproved Leave";
         }
 
+        // log_status
         if ($employee->check_in_time == "Yet to Check-in" && $employee->check_out_time == "-") {
-            $employee->log_status = 2; // Yet to Check-in
+            $employee->log_status = 2;
         } elseif ($employee->check_in_time != "Yet to Check-in" && $employee->check_out_time == "Yet to Check-out") {
-            $employee->log_status = 1; // Checked-in
+            $employee->log_status = 1;
         } elseif ($employee->check_in_time != "Yet to Check-in" && ($employee->check_out_time != "Yet to Check-out" || $employee->check_out_time != "-")) {
-            $employee->log_status = 3; // Checked-out
+            $employee->log_status = 3;
         } elseif ($employee->check_in_time != "Yet to Check-in" && $employee->check_out_time == "-") {
-            $employee->log_status = 4; // Yet to Check-out
+            $employee->log_status = 4;
         }
 
-        // Add is_late property
+        // is_late — use shift-aware late cutoff
+        $late_cutoff      = ShiftHelper::lateCutoff($shift_type); // '11:00:00' or '20:00:00'
         $employee->is_late = false;
         if ($employee->check_in_time && $employee->check_in_time != "Yet to Check-in") {
-            if (\Carbon\Carbon::parse($employee->check_in_time)->format('H:i:s') > '11:00:00') {
+            if (Carbon::parse($employee->check_in_time)->format('H:i:s') > $late_cutoff) {
                 $employee->is_late = true;
             }
         }
@@ -202,51 +199,43 @@ class Attendance extends Component
 
     public function addComment()
     {
-
         $this->validate();
 
-        // Save the comment to the database
         AttendanceComment::create([
             'comment' => $this->comment,
-            'date' => $this->date,
+            'date'    => $this->date,
             'user_id' => $this->selectedEmployeeId,
-            // Add any other necessary fields for the comment record
         ]);
 
         session()->flash('success', 'Comment added successfully');
-
         $this->resetInputs();
-        // Close the modal after saving the comment
         $this->closeModal();
     }
+
     public function editCommentInit($id)
     {
         $this->selectedEmployeeId = $id;
-        $data = AttendanceComment::where('date', $this->date)->where('user_id', $id)->first();
-        $this->comment = $data->comment;
+        $data                     = AttendanceComment::where('date', $this->date)->where('user_id', $id)->first();
+        $this->comment            = $data->comment;
         $this->dispatchBrowserEvent('show-edit-comment-modal');
     }
 
     public function editComment()
     {
-
         $this->validate();
 
-        $data = AttendanceComment::where('date', $this->date)->where('user_id', $this->selectedEmployeeId)->first();
-        // Update the comment to the database
+        $data          = AttendanceComment::where('date', $this->date)->where('user_id', $this->selectedEmployeeId)->first();
         $data->comment = $this->comment;
         $data->save();
 
         session()->flash('success', 'Comment updated successfully');
-
         $this->resetInputs();
-        // Close the modal after saving the comment
         $this->closeModal();
     }
 
     public function resetInputs()
     {
-        $this->comment = '';
+        $this->comment            = '';
         $this->selectedEmployeeId = null;
     }
 

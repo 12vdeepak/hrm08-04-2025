@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityTracker;
 use App\Models\CheckIn;
+use App\Helpers\ShiftHelper;
 use Stevebauman\Location\Facades\Location;
 
 class CheckInController extends Controller
@@ -22,110 +23,92 @@ class CheckInController extends Controller
         $location = Location::get($ip)->cityName;
         $response['location'] = $location;
 
-        // Find the latest check-in record for the user on the current date
+        // Resolve shift type and the correct shift date for right now
+        $shift_type  = $user->shift_type ?? 'day';
+        $shift_date  = ShiftHelper::resolveShiftDate($shift_type);
+
+        // Find the latest check-in record for the user on the current SHIFT DATE
         $check_in = CheckIn::where('user_id', $user->id)
-            ->whereDate('start_time', '=', date('Y-m-d'))
+            ->where('shift_date', $shift_date)
             ->orderBy('start_time', 'desc')
             ->first();
 
         if ($check_in) {
             if ($check_in->end_time != null) {
-                // User has already checked out, create a new check-in record
+                // User has already checked out — create a new check-in record for this shift
                 $check_in = new CheckIn();
-                $check_in->user_id = $user->id;
-                $check_in->start_time = date('Y-m-d H:i:s');
+                $check_in->user_id             = $user->id;
+                $check_in->shift_date          = $shift_date;
+                $check_in->start_time          = date('Y-m-d H:i:s');
                 $check_in->start_time_location = $location;
-                $check_in->in_ip_address = $ip;
+                $check_in->in_ip_address       = $ip;
                 $check_in->save();
 
                 $this->createNewActivity();
 
-                // Calculate total time for the user on the current date
-                $check_ins = CheckIn::where('user_id', $user->id)
-                    ->whereDate('start_time', '=', date('Y-m-d'))
-                    ->get();
+                // Calculate total time for this shift date
+                $time = $this->calculateShiftTime($user->id, $shift_date);
 
-                $time = 0;
-                foreach ($check_ins as $check_in) {
-                    if ($check_in->end_time != null) {
-                        $time += strtotime($check_in->end_time) - strtotime($check_in->start_time);
-                    }
-                }
-
-                $response['button_status'] = 2; // User checked in
-                $response['time'] = $time; // Total time for the user on the current date
+                $response['button_status'] = 2; // Checked in
+                $response['time']          = $time;
             } else {
-                // User has already checked in, update the check-in record with the check-out time
-                $check_in->end_time = date('Y-m-d H:i:s');
+                // User has already checked in — record the check-out
+                $check_in->end_time          = date('Y-m-d H:i:s');
                 $check_in->end_time_location = $location;
-                $check_in->out_ip_address = $ip;
+                $check_in->out_ip_address    = $ip;
                 $check_in->save();
 
-                // Calculate total time for the user on the current date
-                $check_ins = CheckIn::where('user_id', $user->id)
-                    ->whereDate('start_time', '=', date('Y-m-d'))
-                    ->get();
+                // Calculate total time for this shift date
+                $time = $this->calculateShiftTime($user->id, $shift_date);
 
-                $time = 0;
-                foreach ($check_ins as $check_in) {
-                    if ($check_in->end_time != null) {
-                        $time += strtotime($check_in->end_time) - strtotime($check_in->start_time);
-                    }
-                }
-
-                $response['button_status'] = 1; // User checked out
-                $response['time'] = $time; // Total time for the user on the current date
+                $response['button_status'] = 1; // Checked out
+                $response['time']          = $time;
             }
         } else {
-            // User hasn't checked in yet, create a new check-in record
+            // No record yet — first check-in for this shift
             $check_in = new CheckIn();
-            $check_in->user_id = $user->id;
-            $check_in->start_time = date('Y-m-d H:i:s');
+            $check_in->user_id             = $user->id;
+            $check_in->shift_date          = $shift_date;
+            $check_in->start_time          = date('Y-m-d H:i:s');
             $check_in->start_time_location = $location;
-            $check_in->in_ip_address = $ip;
+            $check_in->in_ip_address       = $ip;
             $check_in->save();
 
             $this->createNewActivity();
 
-            $response['button_status'] = 2; // User checked in
-            $response['time'] = 0; // Total time for the user on the current date
+            $response['button_status'] = 2; // Checked in
+            $response['time']          = 0;
         }
-
-        // $this->activityTracker($user);
 
         return $response;
     }
 
-    private function activityTracker($user){
-        // Find the latest activity record for the user on the current date
-        $latest_activity = ActivityTracker::where('user_id', $user->id)
-            ->whereDate('activity_time', '=', date('Y-m-d'))
-            ->orderBy('activity_time', 'desc')
-            ->first();
+    /**
+     * Sum up all completed check-in durations for the given shift date.
+     */
+    private function calculateShiftTime(int $user_id, string $shift_date): int
+    {
+        $check_ins = CheckIn::where('user_id', $user_id)
+            ->where('shift_date', $shift_date)
+            ->get();
 
-        if ($latest_activity && $latest_activity->end_time == null) {
-            // The user is already marked as active, so update the end_time to indicate inactivity.
-            $latest_activity->end_time = date('Y-m-d H:i:s');
-            $latest_activity->save();
-        }else{
-            // Update the activity tracker for the current check-in
-            $activity = new ActivityTracker();
-            $activity->user_id = $user->id;
-            $activity->activity_time = date('Y-m-d H:i:s');
-            $activity->activity_type = 'active';
-            $activity->start_time = date('Y-m-d H:i:s'); // Set the start_time for the current activity
-            $activity->save();
+        $time = 0;
+        foreach ($check_ins as $ci) {
+            if ($ci->end_time != null) {
+                $time += strtotime($ci->end_time) - strtotime($ci->start_time);
+            }
         }
-
+        return $time;
     }
 
-    private function createNewActivity(){
+    private function createNewActivity()
+    {
         return ActivityTracker::create([
-            'user_id' => auth()->id(),
+            'user_id'       => auth()->id(),
             'activity_time' => date('Y-m-d H:i:s'),
             'activity_type' => 'active',
-            'start_time' => date('Y-m-d H:i:s'),
-            'end_time' => date('Y-m-d H:i:s'),
+            'start_time'    => date('Y-m-d H:i:s'),
+            'end_time'      => date('Y-m-d H:i:s'),
         ]);
     }
 }

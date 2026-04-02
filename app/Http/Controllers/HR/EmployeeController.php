@@ -280,6 +280,7 @@ class EmployeeController extends Controller
         $user->view_password = $password;
         $user->password_set = 0;
         $user->password = Hash::make($password);
+        $user->shift_type = $request->shift_type ?? 'day';
         $user->save();
 
         $link = url(route('user_register', ['token' => $token_to_set_password]));
@@ -471,6 +472,7 @@ class EmployeeController extends Controller
         $employee->hr_remark = $request->hr_remark;
         $employee->view_password = $request->password;
         $employee->password = Hash::make($request->password);
+        $employee->shift_type = $request->shift_type ?? 'day';
         $employee->save();
         if ($employee->employee_status == 1) {
             return redirect()->route('employee.index')->with('success', 'Employee Updated Successfully');
