@@ -591,12 +591,11 @@
                                     <select
                                         class="form-control custom-select select2 select2-hidden-accessible"
                                         data-placeholder="Select Region" tabindex="-1" aria-hidden="true" name="shift_type">
-                                        <option value="india"  {{ ($employee->shift_type ?? 'india') == 'india'  ? 'selected' : '' }}>🇮🇳 India — IST (9:00 AM – 7:00 PM)</option>
-                                        <option value="uk"     {{ ($employee->shift_type ?? '') == 'uk'     ? 'selected' : '' }}>🇬🇧 UK — GMT/BST (9:00 AM – 6:00 PM UK = 2:30–11:30 PM IST)</option>
-                                        <option value="us"     {{ ($employee->shift_type ?? '') == 'us'     ? 'selected' : '' }}>🇺🇸 US — EST/EDT (9:00 AM – 6:00 PM EST = 7:30 PM – 4:30 AM IST)</option>
-                                        <option value="canada" {{ ($employee->shift_type ?? '') == 'canada' ? 'selected' : '' }}>🇨🇦 Canada — EST/CST (9:00 AM – 6:00 PM = 7:30 PM – 5:30 AM IST)</option>
+                                        <option value="india"  {{ ($employee->shift_type ?? 'india') == 'india'  ? 'selected' : '' }}>India - 9am to 7pm (IST)</option>
+                                        <option value="uk"     {{ ($employee->shift_type ?? '') == 'uk'     ? 'selected' : '' }}>UK EU UAE - 3pm to 12am (IST)</option>
+                                        <option value="us"     {{ ($employee->shift_type ?? '') == 'us'     ? 'selected' : '' }}>US - 7pm to 4am (IST)</option>
+                                        <option value="anz"    {{ ($employee->shift_type ?? '') == 'anz'    ? 'selected' : '' }}>ANZ - 5am to 2pm (IST)</option>
                                     </select>
-                                    <small class="text-muted">US &amp; Canada shifts cross midnight (IST) — check-outs after midnight are still attributed to the shift's start date.</small>
                                 </div>
                             </div>
                         </div>

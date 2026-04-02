@@ -33,24 +33,24 @@ class ShiftHelper
     {
         return [
             'india' => [
-                'label'           => '🇮🇳 India — IST (9:00 AM – 7:00 PM)',
+                'label'           => 'India - 9am to 7pm (IST)',
                 'crosses_midnight' => false,
-                'late_cutoff'     => '11:00:00', // 11:00 AM IST
+                'late_cutoff'     => '11:00:00', // 11:00 AM IST (2h grace)
             ],
             'uk' => [
-                'label'           => '🇬🇧 UK — GMT/BST (9:00 AM – 6:00 PM UK = 2:30–11:30 PM IST)',
-                'crosses_midnight' => false,   // ends before IST midnight
-                'late_cutoff'     => '15:00:00', // 3:00 PM IST ≈ 9:30 AM UK + 30 min grace
+                'label'           => 'UK EU UAE - 3pm to 12am (IST)',
+                'crosses_midnight' => true,    // ends at midnight, handle post-midnight checkouts
+                'late_cutoff'     => '16:00:00', // 4:00 PM IST (1h grace)
             ],
             'us' => [
-                'label'           => '🇺🇸 US — EST/EDT (9:00 AM – 6:00 PM EST = 7:30 PM – 4:30 AM IST)',
+                'label'           => 'US - 7pm to 4am (IST)',
                 'crosses_midnight' => true,    // ends after IST midnight
-                'late_cutoff'     => '20:30:00', // 8:30 PM IST ≈ 9:00 AM EST + 1 hr grace
+                'late_cutoff'     => '20:00:00', // 8:00 PM IST (1h grace)
             ],
-            'canada' => [
-                'label'           => '🇨🇦 Canada — EST/CST (9:00 AM – 6:00 PM = 7:30 PM – 5:30 AM IST)',
-                'crosses_midnight' => true,    // ends after IST midnight
-                'late_cutoff'     => '20:30:00', // 8:30 PM IST ≈ 9:00 AM local + 1 hr grace
+            'anz' => [
+                'label'           => 'ANZ - 5am to 2pm (IST)',
+                'crosses_midnight' => false,
+                'late_cutoff'     => '06:00:00', // 6:00 AM IST (1h grace)
             ],
         ];
     }
